@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "557828460372",
+    "project_id": "cmsclonelite",
+    "storage_bucket": "cmsclonelite.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:557828460372:android:1ea29c7eaad14e919702c1",
+        "android_client_info": {
+          "package_name": "com.example.cmsclonelite"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "557828460372-82dcvmvi874781kbbs5ugsff8k5pglg0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cmsclonelite",
+            "certificate_hash": "e7f0bc0ee733e96030facac386a8273cfb25e726"
+          }
+        },
+        {
+          "client_id": "557828460372-0184fqcfulugr78smv592m76u2rsqppm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXHWRM-3TkQB3VXUSALP01x8tJvHBVXtU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "557828460372-0184fqcfulugr78smv592m76u2rsqppm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
