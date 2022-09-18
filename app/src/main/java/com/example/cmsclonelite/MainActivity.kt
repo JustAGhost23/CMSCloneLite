@@ -2,6 +2,7 @@ package com.example.cmsclonelite
 
 import android.content.ContentValues.TAG
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
@@ -35,8 +36,8 @@ class MainActivity : ComponentActivity() {
         mAuth = FirebaseAuth.getInstance()
         val user = mAuth.currentUser
         //val application = requireNotNull(this).application
-        val dark = getSharedPreferences("PREFERENCES", MODE_PRIVATE)
-            .getBoolean("darkTheme", false)
+        val sharedPrefs: SharedPreferences = getSharedPreferences("PREFERENCES", MODE_PRIVATE)
+        val dark = sharedPrefs.getBoolean("darkTheme", false)
         setContent {
             val darkTheme: Boolean by settingsViewModel.isDarkTheme.observeAsState(dark)
             CMSCloneLiteTheme(darkTheme = darkTheme){
@@ -102,8 +103,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 else {
-                    Log.w(TAG, "Failed to Sign In")
+                    Log.w(TAG, "Failed to Sign In with One Tap")
                 }
             }
+
     }
 }

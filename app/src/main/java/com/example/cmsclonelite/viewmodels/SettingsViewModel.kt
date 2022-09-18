@@ -12,10 +12,10 @@ class SettingsViewModel {
     val isDarkTheme: LiveData<Boolean>
         get() = _isDarkTheme
 
-    fun darkTheme() {
+    fun setDarkTheme() {
         _isDarkTheme.value = true
     }
-    fun lightTheme() {
+    fun setLightTheme() {
         _isDarkTheme.value = false
     }
     fun signOut(mAuth: FirebaseAuth, oneTapClient: SignInClient, mainNavController: NavHostController) {

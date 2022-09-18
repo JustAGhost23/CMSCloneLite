@@ -1,6 +1,5 @@
 package com.example.cmsclonelite.graphs
 
-import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
@@ -9,7 +8,6 @@ import com.example.cmsclonelite.BottomBarScreen
 import com.example.cmsclonelite.screens.AllCoursesScreen
 import com.example.cmsclonelite.screens.MyCoursesScreen
 import com.example.cmsclonelite.screens.SettingsScreen
-import com.example.cmsclonelite.viewmodels.SettingsViewModel
 
 @Composable
 fun BottomBarNavGraph(mainNavController: NavHostController, bottomNavController: NavHostController) {
