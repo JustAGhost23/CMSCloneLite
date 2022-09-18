@@ -22,8 +22,7 @@ fun MyCoursesScreen() {
         Text(
             text = "My Courses",
             fontSize = MaterialTheme.typography.h3.fontSize,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
+            fontWeight = FontWeight.Bold
         )
     }
 }

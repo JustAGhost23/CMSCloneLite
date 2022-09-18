@@ -7,16 +7,21 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.graphs.SetupNavGraph
 import com.example.cmsclonelite.ui.theme.CMSCloneLiteTheme
+import com.example.cmsclonelite.viewmodels.*
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+
+val settingsViewModel = SettingsViewModel()
 
 class MainActivity : ComponentActivity() {
     private lateinit var navController: NavHostController
@@ -29,8 +34,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         mAuth = FirebaseAuth.getInstance()
         val user = mAuth.currentUser
+        //val application = requireNotNull(this).application
+        val dark = getSharedPreferences("PREFERENCES", MODE_PRIVATE)
+            .getBoolean("darkTheme", false)
         setContent {
-            CMSCloneLiteTheme {
+            val darkTheme: Boolean by settingsViewModel.isDarkTheme.observeAsState(dark)
+            CMSCloneLiteTheme(darkTheme = darkTheme){
                 this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 navController = rememberNavController()
                 SetupNavGraph(navController = navController)

@@ -11,8 +11,7 @@ import com.example.cmsclonelite.screens.MainScreen
 
 @Composable
 fun SetupNavGraph(
-    navController: NavHostController
-) {
+    navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = Screen.MainScreen.route
