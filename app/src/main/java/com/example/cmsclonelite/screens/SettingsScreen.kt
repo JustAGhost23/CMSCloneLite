@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.settingsViewModel
+import com.example.cmsclonelite.viewmodels.MainViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
@@ -32,16 +33,19 @@ private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
 
 @Composable
-fun SettingsScreen(mainNavController: NavHostController) {
+fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
+    LaunchedEffect(Unit) {
+        mainViewModel.setTitle("Settings")
+    }
+    mAuth = FirebaseAuth.getInstance()
+    oneTapClient = Identity.getSignInClient(LocalContext.current)
+    val user = mAuth.currentUser
+    val imageUrl = mAuth.currentUser?.photoUrl
     val context = LocalContext.current
     val sharedPrefs = context
         .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
     val dark = sharedPrefs.getBoolean("darkTheme", false)
     var checked by remember { mutableStateOf(dark) }
-    mAuth = FirebaseAuth.getInstance()
-    oneTapClient = Identity.getSignInClient(LocalContext.current)
-    val user = mAuth.currentUser
-    val imageUrl = mAuth.currentUser?.photoUrl
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -129,5 +133,6 @@ fun SettingsScreen(mainNavController: NavHostController) {
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
-    SettingsScreen(rememberNavController())
+    val mainViewModel = MainViewModel()
+    SettingsScreen(rememberNavController(), mainViewModel = mainViewModel)
 }

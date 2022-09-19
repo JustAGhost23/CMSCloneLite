@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -12,14 +14,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.BottomBarScreen
 import com.example.cmsclonelite.graphs.BottomBarNavGraph
+import com.example.cmsclonelite.viewmodels.MainViewModel
 
 @Composable
-fun MainScreen(mainNavController: NavHostController) {
+fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewModel = viewModel()) {
+    val title: String by mainViewModel.screenTitle.observeAsState("")
     val bottomNavController = rememberNavController()
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { title?.let { Text(it) } }
+            )
+        },
         bottomBar = { BottomBar(navController = bottomNavController) }
     ) {
-        BottomBarNavGraph(mainNavController = mainNavController, bottomNavController = bottomNavController)
+        BottomBarNavGraph(mainNavController = mainNavController, bottomNavController = bottomNavController, mainViewModel = mainViewModel)
     }
 }
 

@@ -2,12 +2,13 @@ package com.example.cmsclonelite.viewmodels
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavHostController
 import com.example.cmsclonelite.Screen
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 
-class SettingsViewModel {
+class SettingsViewModel: ViewModel() {
     private val _isDarkTheme = MutableLiveData<Boolean>()
     val isDarkTheme: LiveData<Boolean>
         get() = _isDarkTheme

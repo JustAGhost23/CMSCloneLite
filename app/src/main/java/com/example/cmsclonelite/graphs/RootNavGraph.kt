@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.screens.*
+import com.example.cmsclonelite.viewmodels.MainViewModel
 
 @Composable
 fun SetupNavGraph(
@@ -24,7 +25,7 @@ fun SetupNavGraph(
             MainScreen(mainNavController = navController)
         }
         composable(route = Screen.About.route) {
-            AboutScreen()
+            AboutScreen(navController = navController)
         }
     }
 }
