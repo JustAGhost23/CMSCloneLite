@@ -119,7 +119,17 @@ fun AdminLoginScreen(
             Button(
                 onClick = {
                     val email = username.lowercase() + "@domain.com"
-                    firebaseAuthWithEmail(email, password, navController, context)
+                    if(username == "") {
+                        Toast.makeText(context.findActivity(), "Please enter your username",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                    else if(password == "") {
+                        Toast.makeText(context.findActivity(), "Please enter your password",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                    else {
+                        firebaseAuthWithEmail(email, password, navController, context)
+                    }
 
                 }
             ) {

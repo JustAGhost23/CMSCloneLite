@@ -3,9 +3,7 @@ package com.example.cmsclonelite.screens
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.Switch
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Info
@@ -46,6 +44,15 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
         .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
     val dark = sharedPrefs.getBoolean("darkTheme", false)
     var checked by remember { mutableStateOf(dark) }
+    val showDialog = remember { mutableStateOf(false) }
+    Card {
+        if (showDialog.value) {
+            LogoutConfirmation(showDialog = showDialog.value,
+                onDismiss = {showDialog.value = false},
+                mainNavController = mainNavController
+            )
+        }
+    }
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -115,11 +122,7 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
                 .fillMaxWidth(0.9f)
                 .clickable(
                     onClick = {
-                        settingsViewModel.signOut(
-                            mAuth = mAuth,
-                            oneTapClient = oneTapClient,
-                            mainNavController = mainNavController
-                        )
+                        showDialog.value = true
                     })
             ) {
                 Icon(imageVector = Icons.Rounded.Logout, contentDescription = "Logout")
@@ -135,4 +138,36 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
 fun SettingsScreenPreview() {
     val mainViewModel = MainViewModel()
     SettingsScreen(rememberNavController(), mainViewModel = mainViewModel)
+}
+@Composable
+fun LogoutConfirmation(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    mainNavController: NavHostController
+) {
+    if (showDialog) {
+        AlertDialog(
+            title = {
+                Text("Logout")
+            },
+            text = {
+                Text(text = "Are you sure you want to logout?")
+            },
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = {
+                    settingsViewModel.signOut(
+                        mAuth = mAuth,
+                        oneTapClient = oneTapClient,
+                        mainNavController = mainNavController)} ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
