@@ -8,7 +8,7 @@ import com.example.cmsclonelite.Screen
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 
-class SettingsViewModel: ViewModel() {
+class ProfileViewModel: ViewModel() {
     private val _isDarkTheme = MutableLiveData<Boolean>()
     val isDarkTheme: LiveData<Boolean>
         get() = _isDarkTheme

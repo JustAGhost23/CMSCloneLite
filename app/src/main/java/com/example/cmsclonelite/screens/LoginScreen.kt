@@ -4,8 +4,12 @@ import android.app.Activity
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
 import android.content.IntentSender
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -29,8 +33,10 @@ import com.example.cmsclonelite.Screen
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.firebase.auth.FirebaseAuth
-import java.lang.Exception
+import com.google.firebase.auth.GoogleAuthProvider
 
 
 private const val CLIENT_ID = "557828460372-0184fqcfulugr78smv592m76u2rsqppm.apps.googleusercontent.com"
@@ -41,6 +47,7 @@ private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
 private lateinit var signInRequest: BeginSignInRequest
 private lateinit var signUpRequest: BeginSignInRequest
+private var showOneTapUI = true
 
 @Composable
 fun LoginScreen(
@@ -68,6 +75,38 @@ fun LoginScreen(
                 .setFilterByAuthorizedAccounts(false)
                 .build())
         .build()
+    val loginResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        if(result.resultCode == Activity.RESULT_OK) {
+            val data: Intent? = result.data
+            try {
+                oneTapClient = Identity.getSignInClient(context)
+                val credential = oneTapClient.getSignInCredentialFromIntent(data)
+                val idToken = credential.googleIdToken
+                when {
+                    idToken != null -> {
+                        firebaseAuthWithGoogle(idToken, navController, context)
+                        Log.d(TAG, "Got ID token.")
+                    }
+                    else -> {
+                        Log.d(TAG, "No ID token!")
+                    }
+                }
+            } catch (e: ApiException) {when (e.statusCode) {
+                CommonStatusCodes.CANCELED -> {
+                    Log.d(TAG, "One-tap dialog was closed.")
+                    showOneTapUI = false
+                }
+                CommonStatusCodes.NETWORK_ERROR -> {
+                    Log.d(TAG, "One-tap encountered a network error.")
+                }
+                else -> {
+                    Log.d(TAG, "Couldn't get credential from result." +
+                            " (${e.localizedMessage})")
+                }
+            }
+            }
+        }
+    }
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background
@@ -97,9 +136,10 @@ fun LoginScreen(
                     oneTapClient.beginSignIn(signInRequest)
                         .addOnSuccessListener(context.findActivity()) { result ->
                             try {
-                                startIntentSenderForResult(context.findActivity(),
-                                    result.pendingIntent.intentSender, REQ_ONE_TAP,
-                                    null, 0, 0, 0, null)
+                                loginResultLauncher.launch(
+                                    IntentSenderRequest.Builder(result.pendingIntent.intentSender)
+                                        .build()
+                                )
                             } catch (e: IntentSender.SendIntentException) {
                                 Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
                             }
@@ -109,9 +149,10 @@ fun LoginScreen(
                             oneTapClient.beginSignIn(signUpRequest)
                                 .addOnSuccessListener(context.findActivity()) { result ->
                                     try {
-                                        startIntentSenderForResult(context.findActivity(),
-                                            result.pendingIntent.intentSender, REQ_ONE_TAP,
-                                            null, 0, 0, 0, null)
+                                        loginResultLauncher.launch(
+                                        IntentSenderRequest.Builder(result.pendingIntent.intentSender)
+                                            .build()
+                                        )
                                     } catch (e: IntentSender.SendIntentException) {
                                         Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
                                     }
@@ -191,4 +232,23 @@ fun Context.findActivity(): Activity {
         context = context.baseContext
     }
     throw IllegalStateException("no activity")
+}
+
+private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostController, context: Context) {
+    val credential = GoogleAuthProvider.getCredential(idToken, null)
+    mAuth.signInWithCredential(credential)
+        .addOnCompleteListener(context.findActivity()) { task ->
+            if(task.isSuccessful) {
+                Log.d(TAG, "Signed In with Credential")
+                navController.navigate(route = Screen.MainScreen.route) {
+                    popUpTo(Screen.Login.route) {
+                        inclusive = true
+                    }
+                }
+            }
+            else {
+                Log.w(TAG, "Failed to Sign In with One Tap")
+            }
+        }
+
 }

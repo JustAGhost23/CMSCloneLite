@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.List
 import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,7 +23,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.cmsclonelite.Screen
-import com.example.cmsclonelite.settingsViewModel
+import com.example.cmsclonelite.profileViewModel
 import com.example.cmsclonelite.viewmodels.MainViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -31,9 +33,9 @@ private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
 
 @Composable
-fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
+fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
     LaunchedEffect(Unit) {
-        mainViewModel.setTitle("Settings")
+        mainViewModel.setTitle("Profile")
     }
     mAuth = FirebaseAuth.getInstance()
     oneTapClient = Identity.getSignInClient(LocalContext.current)
@@ -56,9 +58,9 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        Spacer(modifier = Modifier.padding(top = 40.dp))
+        Spacer(modifier = Modifier.padding(top = 30.dp))
         Row(
-            modifier = Modifier.padding(start = 20.dp),
+            modifier = Modifier.offset(x = 20.dp),
             verticalAlignment = Alignment.Top
         ) {
             AsyncImage(
@@ -82,7 +84,29 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
                     fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.padding(top = 100.dp))
+            Spacer(modifier = Modifier.padding(top = 40.dp))
+            Row(modifier = Modifier
+                .fillMaxWidth(0.9f)
+            ) {
+                Icon(imageVector = Icons.Default.ListAlt, contentDescription = "All Courses")
+                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                Text(
+                    text = "Total Courses Available : 0",
+                    fontSize = 20.sp
+                )
+            }
+            Spacer(modifier = Modifier.padding(top = 40.dp))
+            Row(modifier = Modifier
+                .fillMaxWidth(0.9f)
+            ) {
+                Icon(imageVector = Icons.Rounded.List, contentDescription = "My Courses")
+                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                Text(
+                    text = "Courses enrolled : 0",
+                    fontSize = 20.sp
+                )
+            }
+            Spacer(modifier = Modifier.padding(top = 40.dp))
             Row(modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clickable(
@@ -114,7 +138,7 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
                             .putBoolean("darkTheme", it)
                             .apply()
                         checked = it
-                        if(it) settingsViewModel.setDarkTheme() else settingsViewModel.setLightTheme()
+                        if(it) profileViewModel.setDarkTheme() else profileViewModel.setLightTheme()
                     })
             }
             Spacer(modifier = Modifier.padding(top = 40.dp))
@@ -137,7 +161,7 @@ fun SettingsScreen(mainNavController: NavHostController, mainViewModel: MainView
 @Composable
 fun SettingsScreenPreview() {
     val mainViewModel = MainViewModel()
-    SettingsScreen(rememberNavController(), mainViewModel = mainViewModel)
+    ProfileScreen(rememberNavController(), mainViewModel = mainViewModel)
 }
 @Composable
 fun LogoutConfirmation(
@@ -156,7 +180,7 @@ fun LogoutConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    settingsViewModel.signOut(
+                    profileViewModel.signOut(
                         mAuth = mAuth,
                         oneTapClient = oneTapClient,
                         mainNavController = mainNavController)} ) {
