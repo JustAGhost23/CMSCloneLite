@@ -20,7 +20,7 @@ fun BottomBarNavGraph(mainNavController: NavHostController, bottomNavController:
             MyCoursesScreen(mainViewModel = mainViewModel)
         }
         composable(route = BottomBarScreen.AllCourses.route) {
-            AllCoursesScreen(mainViewModel = mainViewModel)
+            AllCoursesScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)
         }
         composable(route = BottomBarScreen.Profile.route) {
             ProfileScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)

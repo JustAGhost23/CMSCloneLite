@@ -1,10 +1,13 @@
 package com.example.cmsclonelite.screens
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -27,8 +30,10 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
             )
         },
         bottomBar = { BottomBar(navController = bottomNavController) }
-    ) {
-        BottomBarNavGraph(mainNavController = mainNavController, bottomNavController = bottomNavController, mainViewModel = mainViewModel)
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            BottomBarNavGraph(mainNavController = mainNavController, bottomNavController = bottomNavController, mainViewModel = mainViewModel)
+        }
     }
 }
 

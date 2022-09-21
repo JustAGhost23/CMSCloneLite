@@ -2,7 +2,6 @@ package com.example.cmsclonelite.screens
 
 import android.content.ContentValues.TAG
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -31,8 +30,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Screen
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.UserProfileChangeRequest
-
 
 private lateinit var mAuth: FirebaseAuth
 

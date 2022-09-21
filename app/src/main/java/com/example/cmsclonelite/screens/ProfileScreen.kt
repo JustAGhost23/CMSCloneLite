@@ -22,31 +22,38 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.profileViewModel
 import com.example.cmsclonelite.viewmodels.MainViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+
+const val ADMIN_ID = "HT8sVmAC1tSwkoOVcscEphEWYjS2"
 
 private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
 
 @Composable
 fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
-    LaunchedEffect(Unit) {
-        mainViewModel.setTitle("Profile")
-    }
+    val courseRepository = CourseRepository()
+    val db = FirebaseFirestore.getInstance()
     mAuth = FirebaseAuth.getInstance()
     oneTapClient = Identity.getSignInClient(LocalContext.current)
     val user = mAuth.currentUser
-    val imageUrl = mAuth.currentUser?.photoUrl
     val context = LocalContext.current
     val sharedPrefs = context
         .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
     val dark = sharedPrefs.getBoolean("darkTheme", false)
     var checked by remember { mutableStateOf(dark) }
+    var totalCourses by remember { mutableStateOf(0) }
     val showDialog = remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        totalCourses = courseRepository.totalCourseCount(db)
+        mainViewModel.setTitle("Profile")
+    }
     Card {
         if (showDialog.value) {
             LogoutConfirmation(showDialog = showDialog.value,
@@ -63,6 +70,7 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
             modifier = Modifier.offset(x = 20.dp),
             verticalAlignment = Alignment.Top
         ) {
+            val imageUrl = mAuth.currentUser?.photoUrl
             AsyncImage(
                 model = if (imageUrl == null) "https://lh3.googleusercontent.com/a/ALm5wu2lBRiENcoc643W_odk7f3cK7MpnTuRWsh3nsV3=s96-c" else imageUrl,
                 contentDescription = "User Image"
@@ -91,20 +99,25 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                 Icon(imageVector = Icons.Default.ListAlt, contentDescription = "All Courses")
                 Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                 Text(
-                    text = "Total Courses Available : 0",
+                    text = "Total Courses Available : ${totalCourses}",
                     fontSize = 20.sp
                 )
             }
-            Spacer(modifier = Modifier.padding(top = 40.dp))
-            Row(modifier = Modifier
-                .fillMaxWidth(0.9f)
-            ) {
-                Icon(imageVector = Icons.Rounded.List, contentDescription = "My Courses")
-                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
-                Text(
-                    text = "Courses enrolled : 0",
-                    fontSize = 20.sp
-                )
+            if(user != null) {
+                if (user.uid != ADMIN_ID) {
+                    Spacer(modifier = Modifier.padding(top = 40.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                    ) {
+                        Icon(imageVector = Icons.Rounded.List, contentDescription = "My Courses")
+                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                        Text(
+                            text = "Courses enrolled : 0",
+                            fontSize = 20.sp
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.padding(top = 40.dp))
             Row(modifier = Modifier

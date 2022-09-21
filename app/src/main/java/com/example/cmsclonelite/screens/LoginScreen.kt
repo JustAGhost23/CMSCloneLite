@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat.startIntentSenderForResult
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.R
@@ -37,10 +36,9 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-
+import com.google.firebase.firestore.FirebaseFirestore
 
 private const val CLIENT_ID = "557828460372-0184fqcfulugr78smv592m76u2rsqppm.apps.googleusercontent.com"
-private const val REQ_ONE_TAP = 2
 //TODO: Make Constants file and move constants there
 
 private lateinit var mAuth: FirebaseAuth
@@ -54,6 +52,7 @@ fun LoginScreen(
     navController: NavHostController
 ) {
     val context = LocalContext.current
+    val db = FirebaseFirestore.getInstance()
     mAuth = FirebaseAuth.getInstance()
     oneTapClient = Identity.getSignInClient(LocalContext.current)
     signInRequest = BeginSignInRequest.builder()
@@ -84,7 +83,7 @@ fun LoginScreen(
                 val idToken = credential.googleIdToken
                 when {
                     idToken != null -> {
-                        firebaseAuthWithGoogle(idToken, navController, context)
+                        firebaseAuthWithGoogle(idToken, navController, context, db)
                         Log.d(TAG, "Got ID token.")
                     }
                     else -> {
@@ -234,11 +233,32 @@ fun Context.findActivity(): Activity {
     throw IllegalStateException("no activity")
 }
 
-private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostController, context: Context) {
+private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostController, context: Context, db: FirebaseFirestore) {
     val credential = GoogleAuthProvider.getCredential(idToken, null)
     mAuth.signInWithCredential(credential)
         .addOnCompleteListener(context.findActivity()) { task ->
             if(task.isSuccessful) {
+                val currentUserUid = mAuth.currentUser!!.uid
+                val userDoc = db.collection("users").document(currentUserUid)
+                userDoc.get().addOnCompleteListener { innerTask ->
+                    if (innerTask.isSuccessful) {
+                        val document = innerTask.result
+                        if(document != null) {
+                            if (document.exists()) {
+                                Log.d(TAG, "Document already exists.")
+                            } else {
+                                val userInfo = hashMapOf(
+                                    "name" to mAuth.currentUser!!.displayName,
+                                    "enrolled" to listOf<String>()
+                                )
+                                db.collection("users").document(currentUserUid).set(userInfo)
+                                Log.d(TAG, "Document doesn't exist. Created new one")
+                            }
+                        }
+                    } else {
+                        Log.d("TAG", "Error: ", task.exception)
+                    }
+                }
                 Log.d(TAG, "Signed In with Credential")
                 navController.navigate(route = Screen.MainScreen.route) {
                     popUpTo(Screen.Login.route) {
