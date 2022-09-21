@@ -49,9 +49,11 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
     val dark = sharedPrefs.getBoolean("darkTheme", false)
     var checked by remember { mutableStateOf(dark) }
     var totalCourses by remember { mutableStateOf(0) }
+    var enrolledCourses by remember { mutableStateOf(0) }
     val showDialog = remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         totalCourses = courseRepository.totalCourseCount(db)
+        enrolledCourses = courseRepository.userTotalEnrolledCourseCount(db, user!!.uid)
         mainViewModel.setTitle("Profile")
     }
     Card {
@@ -113,7 +115,7 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                         Icon(imageVector = Icons.Rounded.List, contentDescription = "My Courses")
                         Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                         Text(
-                            text = "Courses enrolled : 0",
+                            text = "Courses enrolled : ${enrolledCourses}",
                             fontSize = 20.sp
                         )
                     }

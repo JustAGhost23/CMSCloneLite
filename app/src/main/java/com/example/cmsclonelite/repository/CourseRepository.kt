@@ -11,6 +11,10 @@ class CourseRepository {
         val snapshot = coursesRef.get().await()
         return snapshot.documents
     }
+    private suspend fun getUser(db: FirebaseFirestore, uid: String): DocumentSnapshot {
+        val coursesRef = db.collection("users").document(uid)
+        return coursesRef.get().await()
+    }
     suspend fun readData(db: FirebaseFirestore): List<Course> {
         val docList = getCourses(db)
         val list = ArrayList<Course>()
@@ -32,5 +36,10 @@ class CourseRepository {
     suspend fun totalCourseCount(db: FirebaseFirestore): Int {
         val docList = getCourses(db)
         return docList.size
+    }
+    suspend fun userTotalEnrolledCourseCount(db: FirebaseFirestore, uid: String): Int {
+        val doc = getUser(db, uid)
+        val enrolledCourseList: List<String> = doc.get("enrolled") as List<String>
+        return enrolledCourseList.size
     }
 }
