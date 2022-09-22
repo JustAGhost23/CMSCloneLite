@@ -31,26 +31,43 @@ private lateinit var mAuth: FirebaseAuth
 @Composable
 fun AllCoursesScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
     var list: List<Course> by remember { mutableStateOf(mutableListOf()) }
+    var userEnrolledCourseList: List<String>? by remember { mutableStateOf(mutableListOf()) }
     mAuth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
     val courseRepository = CourseRepository()
     LaunchedEffect(Unit) {
         mainViewModel.setTitle("All Courses")
-        list = courseRepository.readData(db = db)
+        userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
+        list = courseRepository.getData(db = db)
     }
     if(mAuth.currentUser!!.uid == "HT8sVmAC1tSwkoOVcscEphEWYjS2") {
-        FABAnywhere(FabPosition.End, onClick = {
+        AddFAB(FabPosition.Center, onClick = {
             mainNavController.navigate(Screen.EditCourseDetails.route)
         }) {
             Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
         }
     }
-    LazyColumn(
-        contentPadding = PaddingValues(vertical = 20.dp, horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(items = list) { course ->
-            CustomItem(course = course, navController = mainNavController)
+    if(list.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No courses added yet",
+                fontSize = MaterialTheme.typography.h5.fontSize,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+    else {
+        LazyColumn(
+            contentPadding = PaddingValues(vertical = 20.dp, horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(items = list) { course ->
+                CustomItem(course = course, navController = mainNavController, userEnrolledCourseList = userEnrolledCourseList)
+            }
         }
     }
 }
@@ -62,10 +79,10 @@ fun AllCoursesScreenPreview() {
     AllCoursesScreen(mainNavController = rememberNavController(), mainViewModel = mainViewModel)
 }
 @Composable
-fun CustomItem(course: Course, navController: NavHostController) {
+fun CustomItem(course: Course, navController: NavHostController, userEnrolledCourseList: List<String>?) {
     Column(
         modifier = Modifier
-            .clip(shape = RoundedCornerShape(20.dp))
+            .clip(shape = RoundedCornerShape(12.dp))
             .background(Color.LightGray)
             .fillMaxWidth()
             .clickable(
@@ -74,7 +91,17 @@ fun CustomItem(course: Course, navController: NavHostController) {
                         key = "course",
                         value = course
                     )
-                    navController.navigate(Screen.CourseDetails.route)
+                    if (userEnrolledCourseList != null) {
+                        if(course.id.toString() in userEnrolledCourseList) {
+                            navController.navigate(Screen.EnrolledCourseDetails.route)
+                        }
+                        else {
+                            navController.navigate(Screen.CourseDetails.route)
+                        }
+                    }
+                    else {
+                        navController.navigate(Screen.CourseDetails.route)
+                    }
                 })
             .padding(vertical = 12.dp, horizontal = 12.dp),
         horizontalAlignment = Alignment.Start
@@ -97,7 +124,7 @@ fun CustomItem(course: Course, navController: NavHostController) {
     }
 }
 @Composable
-fun FABAnywhere(
+fun AddFAB(
     fabPosition: FabPosition,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

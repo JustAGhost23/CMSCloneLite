@@ -2,27 +2,28 @@ package com.example.cmsclonelite.screens
 
 import android.content.ContentValues.TAG
 import android.util.Log
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Announcement
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
-import com.example.cmsclonelite.profileViewModel
+import com.example.cmsclonelite.repository.CourseRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
@@ -33,9 +34,14 @@ private lateinit var mAuth: FirebaseAuth
 @Composable
 fun CourseDetailsScreen(navController: NavHostController, course: Course) {
     val db = FirebaseFirestore.getInstance()
+    val courseRepository = CourseRepository()
     mAuth = FirebaseAuth.getInstance()
+    var userEnrolledCourseList: List<String>? by remember { mutableStateOf(mutableListOf()) }
     val showDeleteDialog = remember { mutableStateOf(false) }
     val showEnrollDialog = remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
+    }
     Card {
         if (showDeleteDialog.value) {
             CourseDeletionConfirmation(showDialog = showDeleteDialog.value,
@@ -76,31 +82,161 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                     }
                 )
             },
-        ) {//TODO: Complete Edit and enroll soon
-            if(mAuth.currentUser!!.uid == "HT8sVmAC1tSwkoOVcscEphEWYjS2") {
-                FABAnywhere(FabPosition.End, onClick = {
-                    showDeleteDialog.value = true
-                }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete Courses (Admin Only)")
-                }
-            }
-            else {
-                FABAnywhere(FabPosition.End, onClick = {
-                    showEnrollDialog.value = true
-                }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Enroll in Course")
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Display Course Details",
-                    fontSize = MaterialTheme.typography.h3.fontSize,
-                    fontWeight = FontWeight.Bold
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(0.9f)
+                        .padding(top =  12.dp),
+                    elevation = 24.dp
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+                        ) {
+                            Text(
+                                "${course.courseName}",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+                        ) {
+                            Text(
+                                "Instructor: ",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
+                        ) {
+                            Text(
+                                "${course.instructor}",
+                                fontSize = 16.sp
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+                        ) {
+                            Text(
+                                "Course Timings: ",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
+                        ) {
+                            Text(text = if(course.startDate!!.minutes / 10 == 0) {
+                                "Every ${course.days}, at ${course.startDate!!.hours}:0${course.startDate!!.minutes}"
+                            }
+                            else {
+                                "Every ${course.days}, at ${course.startDate!!.hours}:${course.startDate!!.minutes}"
+                                 },
+                                fontSize = 16.sp
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)
+                        ) {
+                            Text(
+                                "Start Date: ${course.startDate!!.date}/${course.startDate!!.month}/${course.startDate!!.year + 1900}",
+                                fontSize = 16.sp
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
+                        ) {
+                            Text(
+                                "End Date: ${course.endDate!!.date}/${course.startDate!!.month}/${course.startDate!!.year + 1900}",
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
+                if (mAuth.currentUser!!.uid == "HT8sVmAC1tSwkoOVcscEphEWYjS2") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .weight(1f)
+                            .padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
+                            onClick = {
+                                //TODO: Implement Announcements feature through here
+                            },
+                            modifier = Modifier.size(56.dp),
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                        ) {
+                            Icon(
+                                Icons.Default.Announcement,
+                                contentDescription = "Announcements (for admin only)"
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                navController.navigate(Screen.EditCourseDetails.route)
+                            },
+                            modifier = Modifier.size(56.dp),
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit (for admin only)"
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                showDeleteDialog.value = true
+                            },
+                            modifier = Modifier.size(56.dp),
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete (for admin only)"
+                            )
+                        }
+                    }
+                } else if (userEnrolledCourseList != null) {
+                    if (course.id.toString() !in userEnrolledCourseList!!) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .weight(1f)
+                                .padding(bottom = 8.dp),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Button(
+                                onClick = {
+                                    showEnrollDialog.value = true
+                                },
+                                modifier = Modifier.size(56.dp),
+                                shape = CircleShape,
+                                contentPadding = PaddingValues(0.dp),
+                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Enroll"
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -130,6 +266,25 @@ fun CourseDeletionConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
+                    db.collection("users").whereArrayContains("enrolled", course.id!!)
+                        .get()
+                        .addOnCompleteListener { task ->
+                            if(task.isSuccessful) {
+                                val documents = task.result
+                                for(document in documents) {
+                                    val user = document.id
+                                    val username = document.get("name")
+                                    val courseList: MutableList<String> = document.get("enrolled") as MutableList<String>
+                                    courseList.remove(course.id)
+                                    val userInfo = hashMapOf(
+                                        "name" to username,
+                                        "enrolled" to courseList
+                                    )
+                                    db.collection("users").document(user)
+                                        .set(userInfo)
+                                }
+                            }
+                        }
                     db.collection("courses").document("${course.id}")
                         .delete()
                         .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully deleted!") }

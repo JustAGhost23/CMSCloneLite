@@ -16,3 +16,9 @@ data class Course (
     var endDate: @RawValue Date? = null,
     var announcements: HashMap<String, HashMap<String, String>> = hashMapOf()
 ): Parcelable
+
+@Parcelize
+data class Announcement (
+    var title: String? = null,
+    var body: String? = null
+): Parcelable

@@ -178,7 +178,7 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Login with BITSMail",
+                            text = "Login with GMail",
                             textAlign = TextAlign.Center,
                             fontSize = 15.sp
                         )
