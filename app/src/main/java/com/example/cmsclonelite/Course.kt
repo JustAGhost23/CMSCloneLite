@@ -1,6 +1,7 @@
 package com.example.cmsclonelite
 
 import android.os.Parcelable
+import com.google.type.DateTime
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 import java.util.*
@@ -12,8 +13,10 @@ data class Course (
     var courseName: String? = null,
     var instructor: String? = null,
     var days: String? = null,
-    var startDate: @RawValue Date? = null,
-    var endDate: @RawValue Date? = null,
+    var startDateStartTime: @RawValue Date? = null,
+    var startDateEndTime: @RawValue Date? = null,
+    var endDateStartTime: @RawValue Date? = null,
+    var endDateEndTime: @RawValue Date? = null,
     var announcements: HashMap<String, HashMap<String, String>> = hashMapOf()
 ): Parcelable
 

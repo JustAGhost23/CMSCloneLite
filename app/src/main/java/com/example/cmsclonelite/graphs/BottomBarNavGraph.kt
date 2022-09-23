@@ -17,7 +17,7 @@ fun BottomBarNavGraph(mainNavController: NavHostController, bottomNavController:
         startDestination = BottomBarScreen.MyCourses.route
     ) {
         composable(route = BottomBarScreen.MyCourses.route) {
-            MyCoursesScreen(mainViewModel = mainViewModel)
+            MyCoursesScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)
         }
         composable(route = BottomBarScreen.AllCourses.route) {
             AllCoursesScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)

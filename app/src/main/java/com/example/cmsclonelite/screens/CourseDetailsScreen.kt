@@ -14,6 +14,7 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -104,6 +105,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                        Divider(color = Color.LightGray, modifier = Modifier.fillMaxWidth().width(1.dp))
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
                         ) {
@@ -133,20 +135,13 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                         ) {
-                            Text(text = if(course.startDate!!.minutes / 10 == 0) {
-                                "Every ${course.days}, at ${course.startDate!!.hours}:0${course.startDate!!.minutes}"
-                            }
-                            else {
-                                "Every ${course.days}, at ${course.startDate!!.hours}:${course.startDate!!.minutes}"
-                                 },
-                                fontSize = 16.sp
-                            )
+                            Text("Every ${course.days}, from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.startDateEndTime!!.hours.toString().padStart(2, '0')}:${course.startDateEndTime!!.minutes.toString().padStart(2, '0')}")
                         }
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)
                         ) {
                             Text(
-                                "Start Date: ${course.startDate!!.date}/${course.startDate!!.month}/${course.startDate!!.year + 1900}",
+                                "Start Date: ${course.startDateStartTime!!.date.toString().padStart(2, '0')}/${(course.startDateStartTime!!.month+1).toString().padStart(2, '0')}/${course.startDateStartTime!!.year + 1900}",
                                 fontSize = 16.sp
                             )
                         }
@@ -154,13 +149,13 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                         ) {
                             Text(
-                                "End Date: ${course.endDate!!.date}/${course.startDate!!.month}/${course.startDate!!.year + 1900}",
+                                "End Date: ${course.endDateStartTime!!.date.toString().padStart(2, '0')}/${(course.endDateStartTime!!.month+1).toString().padStart(2, '0')}/${course.endDateStartTime!!.year + 1900}",
                                 fontSize = 16.sp
                             )
                         }
                     }
                 }
-                if (mAuth.currentUser!!.uid == "HT8sVmAC1tSwkoOVcscEphEWYjS2") {
+                if (mAuth.currentUser!!.uid == ADMIN_ID) {
                     Row(
                         modifier = Modifier.fillMaxWidth()
                             .weight(1f)

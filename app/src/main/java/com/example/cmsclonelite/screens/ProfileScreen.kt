@@ -31,8 +31,6 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-const val ADMIN_ID = "HT8sVmAC1tSwkoOVcscEphEWYjS2"
-
 private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
 

@@ -21,6 +21,17 @@ class CourseRepository {
         val coursesRef = db.collection("courses").document(courseId)
         return coursesRef.get().await()
     }
+    private suspend fun getUserEnrolledCourses(db: FirebaseFirestore, uid: String): List<DocumentSnapshot> {
+        val snapshotList = arrayListOf<DocumentSnapshot>()
+        val stringList = userEnrolledCourseList(db, uid)
+        if (stringList != null) {
+            for(string in stringList) {
+                val coursesRef = db.collection("courses").document(string)
+                snapshotList.add(coursesRef.get().await())
+            }
+        }
+        return snapshotList
+    }
     suspend fun getData(db: FirebaseFirestore): List<Course> {
         val docList = getCourses(db)
         val list = ArrayList<Course>()
@@ -30,10 +41,14 @@ class CourseRepository {
             course.courseName = doc.data?.get("name")?.toString()
             course.instructor = doc.data?.get("instructor")?.toString()
             course.days = doc.data?.get("days")?.toString()
-            val timestampStartDate = doc.data?.get("startdate") as com.google.firebase.Timestamp
-            course.startDate = timestampStartDate.toDate()
-            val timestampEndDate = doc.data?.get("enddate") as com.google.firebase.Timestamp
-            course.endDate = timestampEndDate.toDate()
+            val timestampStartDateStartTime = doc.data?.get("startDateStartTime") as com.google.firebase.Timestamp
+            course.startDateStartTime = timestampStartDateStartTime.toDate()
+            val timestampStartDateEndTime = doc.data?.get("startDateEndTime") as com.google.firebase.Timestamp
+            course.startDateEndTime = timestampStartDateEndTime.toDate()
+            val timestampEndDateStartTime = doc.data?.get("endDateStartTime") as com.google.firebase.Timestamp
+            course.endDateStartTime = timestampEndDateStartTime.toDate()
+            val timestampEndDateEndTime = doc.data?.get("endDateEndTime") as com.google.firebase.Timestamp
+            course.endDateEndTime = timestampEndDateEndTime.toDate()
             course.announcements = doc.data?.get("announcements") as HashMap<String, HashMap<String, String>>
             list.add(course)
         }
@@ -66,5 +81,27 @@ class CourseRepository {
     suspend fun userEnrolledCourseList(db: FirebaseFirestore, uid: String): List<String>? {
         val doc = getUser(db, uid)
         return doc.get("enrolled") as List<String>?
+    }
+    suspend fun getUserEnrolledCoursesData(db: FirebaseFirestore, uid: String): List<Course> {
+        val docList = getUserEnrolledCourses(db, uid)
+        val courseList = ArrayList<Course>()
+        for(doc in docList) {
+            val course = Course()
+            course.id = doc.id
+            course.courseName = doc.data?.get("name")?.toString()
+            course.instructor = doc.data?.get("instructor")?.toString()
+            course.days = doc.data?.get("days")?.toString()
+            val timestampStartDateStartTime = doc.data?.get("startDateStartTime") as com.google.firebase.Timestamp
+            course.startDateStartTime = timestampStartDateStartTime.toDate()
+            val timestampStartDateEndTime = doc.data?.get("startDateEndTime") as com.google.firebase.Timestamp
+            course.startDateEndTime = timestampStartDateEndTime.toDate()
+            val timestampEndDateStartTime = doc.data?.get("endDateStartTime") as com.google.firebase.Timestamp
+            course.endDateStartTime = timestampEndDateStartTime.toDate()
+            val timestampEndDateEndTime = doc.data?.get("endDateEndTime") as com.google.firebase.Timestamp
+            course.endDateEndTime = timestampEndDateEndTime.toDate()
+            course.announcements = doc.data?.get("announcements") as HashMap<String, HashMap<String, String>>
+            courseList.add(course)
+        }
+        return courseList
     }
 }

@@ -40,7 +40,7 @@ fun AllCoursesScreen(mainNavController: NavHostController, mainViewModel: MainVi
         userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
         list = courseRepository.getData(db = db)
     }
-    if(mAuth.currentUser!!.uid == "HT8sVmAC1tSwkoOVcscEphEWYjS2") {
+    if(mAuth.currentUser!!.uid == ADMIN_ID) {
         AddFAB(FabPosition.Center, onClick = {
             mainNavController.navigate(Screen.EditCourseDetails.route)
         }) {
@@ -66,7 +66,7 @@ fun AllCoursesScreen(mainNavController: NavHostController, mainViewModel: MainVi
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(items = list) { course ->
-                CustomItem(course = course, navController = mainNavController, userEnrolledCourseList = userEnrolledCourseList)
+                AllCoursesCustomItem(course = course, navController = mainNavController, userEnrolledCourseList = userEnrolledCourseList)
             }
         }
     }
@@ -79,7 +79,7 @@ fun AllCoursesScreenPreview() {
     AllCoursesScreen(mainNavController = rememberNavController(), mainViewModel = mainViewModel)
 }
 @Composable
-fun CustomItem(course: Course, navController: NavHostController, userEnrolledCourseList: List<String>?) {
+fun AllCoursesCustomItem(course: Course, navController: NavHostController, userEnrolledCourseList: List<String>?) {
     Column(
         modifier = Modifier
             .clip(shape = RoundedCornerShape(12.dp))
