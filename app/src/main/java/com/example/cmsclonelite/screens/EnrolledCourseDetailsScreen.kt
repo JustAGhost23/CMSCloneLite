@@ -8,6 +8,9 @@ import android.net.Uri
 import android.provider.CalendarContract
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -28,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import androidx.core.graphics.convertTo
@@ -37,13 +41,72 @@ import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 @Composable
 fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course) {
     val context = LocalContext.current
-    val db = FirebaseFirestore.getInstance()
     val showCalendarDialog = remember { mutableStateOf(false) }
+    val requestWritePermissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if(isGranted) {
+            showCalendarDialog.value = false
+            val calID: Long? = getCalendarId(context)
+            val startMillis: Long = Calendar.getInstance().run {
+                set(
+                    course.startDateStartTime!!.year + 1900,
+                    course.startDateStartTime!!.month,
+                    course.startDateStartTime!!.date,
+                    course.startDateStartTime!!.hours,
+                    course.startDateStartTime!!.minutes
+                )
+                timeInMillis
+            }
+            val values = ContentValues().apply {
+                put(CalendarContract.Events.DTSTART, startMillis)
+                put(CalendarContract.Events.TITLE, course.courseName)
+                put(CalendarContract.Events.CALENDAR_ID, calID)
+                put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+                put(
+                    CalendarContract.Events.DURATION,
+                    "PT${course.endDateEndTime!!.hours - course.startDateStartTime!!.hours}H${course.endDateEndTime!!.minutes - course.startDateStartTime!!.minutes}M"
+                )
+                put(
+                    CalendarContract.Events.RRULE,
+                    "FREQ=WEEKLY;UNTIL=${course.endDateStartTime!!.year + 1900}${
+                        (course.endDateStartTime!!.month + 1).toString()
+                            .padStart(2, '0')
+                    }${
+                        course.endDateStartTime!!.date.toString().padStart(2, '0')
+                    }T${
+                        course.endDateEndTime!!.hours.toString().padStart(2, '0')
+                    }${
+                        course.endDateEndTime!!.minutes.toString().padStart(2, '0')
+                    }${
+                        course.endDateEndTime!!.seconds.toString().padStart(2, '0')
+                    }Z;BYDAY=${course.days}"
+                );
+            }
+            context.contentResolver.insert(
+                CalendarContract.Events.CONTENT_URI,
+                values
+            )!!
+            Toast.makeText(context, "Calendar Events added", Toast.LENGTH_SHORT).show()
+            navController.navigate(Screen.MainScreen.route) {
+                popUpTo(Screen.MainScreen.route) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+    val requestReadPermissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if(isGranted) {
+            Toast.makeText(context, "Permission provided", Toast.LENGTH_SHORT).show()
+        }
+        else {
+            Toast.makeText(context, "Permission rejected", Toast.LENGTH_SHORT).show()
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -67,16 +130,17 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                 CalendarExportConfirmation(showDialog = showCalendarDialog.value,
                     onDismiss = {showCalendarDialog.value = false},
                     navController = navController,
-                    db = db,
                     course = course,
-                    context = context
+                    context = context,
+                    requestWritePermissionsLauncher = requestWritePermissionsLauncher,
+                    requestReadPermissionsLauncher =  requestReadPermissionsLauncher
                 )
             }
         }
         AddFAB(FabPosition.Center, onClick = {
             showCalendarDialog.value = true
         }) {
-            Icon(Icons.Filled.CalendarToday, contentDescription = "Google Calendar export")
+            Icon(Icons.Filled.CalendarToday, contentDescription = "Calendar export")
         }
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -124,9 +188,10 @@ fun CalendarExportConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     navController: NavHostController,
-    db: FirebaseFirestore,
     course: Course,
-    context: Context
+    context: Context,
+    requestWritePermissionsLauncher: ManagedActivityResultLauncher<String, Boolean>,
+    requestReadPermissionsLauncher: ManagedActivityResultLauncher<String, Boolean>
 ) {
     if (showDialog) {
         AlertDialog(
@@ -139,30 +204,62 @@ fun CalendarExportConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    val callbackId = 42
-                    checkPermission(callbackId, context, Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-                    val calID: Long? = getCalendarId(context)
-                    val startMillis: Long = Calendar.getInstance().run {
-                        set(course.startDateStartTime!!.year+1900,
-                            course.startDateStartTime!!.month,
-                            course.startDateStartTime!!.date,
-                            course.startDateStartTime!!.hours,
-                            course.startDateStartTime!!.minutes)
-                        timeInMillis
+                    if(ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) != PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PERMISSION_GRANTED) {
+                        requestReadPermissionsLauncher.launch(Manifest.permission.READ_CALENDAR)
+                        requestWritePermissionsLauncher.launch(Manifest.permission.WRITE_CALENDAR)
                     }
-                    val values = ContentValues().apply {
-                        put(CalendarContract.Events.DTSTART, startMillis)
-                        put(CalendarContract.Events.TITLE, course.courseName)
-                        put(CalendarContract.Events.CALENDAR_ID, calID)
-                        put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
-                        put(CalendarContract.Events.DURATION, "PT${course.endDateEndTime!!.hours - course.startDateStartTime!!.hours}H${course.endDateEndTime!!.minutes - course.startDateStartTime!!.minutes}M")
-                        put(CalendarContract.Events.RRULE, "FREQ=WEEKLY;UNTIL=${course.endDateStartTime!!.year+1900}${(course.endDateStartTime!!.month+1).toString().padStart(2, '0')}${course.endDateStartTime!!.date.toString().padStart(2, '0')}T${course.endDateEndTime!!.hours.toString().padStart(2, '0')}${course.endDateEndTime!!.minutes.toString().padStart(2, '0')}${course.endDateEndTime!!.seconds.toString().padStart(2, '0')}Z;BYDAY=${course.days}");
-                    }
-                    context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)!!
-                    Toast.makeText(context, "Calendar Events added", Toast.LENGTH_SHORT).show()
-                    navController.navigate(Screen.MainScreen.route) {
-                        popUpTo(Screen.MainScreen.route) {
-                            inclusive = true
+                    else if(ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PERMISSION_GRANTED) {
+                            requestReadPermissionsLauncher.launch(Manifest.permission.READ_CALENDAR)
+                        }
+                    else if(ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) != PERMISSION_GRANTED) {
+                            requestWritePermissionsLauncher.launch(Manifest.permission.WRITE_CALENDAR)
+                        }
+                    else {
+                        val calID: Long? = getCalendarId(context)
+                        val startMillis: Long = Calendar.getInstance().run {
+                            set(
+                                course.startDateStartTime!!.year + 1900,
+                                course.startDateStartTime!!.month,
+                                course.startDateStartTime!!.date,
+                                course.startDateStartTime!!.hours,
+                                course.startDateStartTime!!.minutes
+                            )
+                            timeInMillis
+                        }
+                        val values = ContentValues().apply {
+                            put(CalendarContract.Events.DTSTART, startMillis)
+                            put(CalendarContract.Events.TITLE, course.courseName)
+                            put(CalendarContract.Events.CALENDAR_ID, calID)
+                            put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+                            put(
+                                CalendarContract.Events.DURATION,
+                                "PT${course.endDateEndTime!!.hours - course.startDateStartTime!!.hours}H${course.endDateEndTime!!.minutes - course.startDateStartTime!!.minutes}M"
+                            )
+                            put(
+                                CalendarContract.Events.RRULE,
+                                "FREQ=WEEKLY;UNTIL=${course.endDateStartTime!!.year + 1900}${
+                                    (course.endDateStartTime!!.month + 1).toString()
+                                        .padStart(2, '0')
+                                }${
+                                    course.endDateStartTime!!.date.toString().padStart(2, '0')
+                                }T${
+                                    course.endDateEndTime!!.hours.toString().padStart(2, '0')
+                                }${
+                                    course.endDateEndTime!!.minutes.toString().padStart(2, '0')
+                                }${
+                                    course.endDateEndTime!!.seconds.toString().padStart(2, '0')
+                                }Z;BYDAY=${course.days}"
+                            );
+                        }
+                        context.contentResolver.insert(
+                            CalendarContract.Events.CONTENT_URI,
+                            values
+                        )!!
+                        Toast.makeText(context, "Calendar Events added", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.MainScreen.route) {
+                            popUpTo(Screen.MainScreen.route) {
+                                inclusive = true
+                            }
                         }
                     }
                 }) {
@@ -176,14 +273,6 @@ fun CalendarExportConfirmation(
             }
         )
     }
-}
-private fun checkPermission(callbackId: Int, context: Context, vararg permissionsId: String) {
-    var permissions = true
-    for (p in permissionsId) {
-        permissions =
-            permissions && ContextCompat.checkSelfPermission(context, p) == PERMISSION_GRANTED
-    }
-    if (!permissions) ActivityCompat.requestPermissions(context.findActivity(), permissionsId, callbackId)
 }
 private fun getCalendarId(context: Context) : Long? {
     val projection = arrayOf(CalendarContract.Calendars._ID, CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
