@@ -85,7 +85,7 @@ fun AllCoursesCustomCard(course: Course, navController: NavHostController, userE
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp)
+            .padding(top = 4.dp)
             .clickable(
                 onClick = {
                     navController.currentBackStackEntry?.savedStateHandle?.set(

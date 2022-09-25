@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,11 +18,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
+import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+
+private lateinit var mAuth: FirebaseAuth
 
 @Composable
 fun AnnouncementsScreen(navController: NavHostController, course: Course) {
+    mAuth = FirebaseAuth.getInstance()
     var announcementList: List<Announcement> by remember { mutableStateOf(mutableListOf()) }
     val db = FirebaseFirestore.getInstance()
     val courseRepository = CourseRepository()
@@ -44,6 +50,17 @@ fun AnnouncementsScreen(navController: NavHostController, course: Course) {
             )
         },
     ) {
+        if(mAuth.currentUser!!.uid == ADMIN_ID) {
+            AddFAB(FabPosition.Center, onClick = {
+                navController.currentBackStackEntry?.savedStateHandle?.set(
+                    key = "courseAnnouncements",
+                    value = course
+                )
+                navController.navigate(Screen.AddAnnouncements.route)
+            }) {
+                Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
+            }
+        }
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -69,8 +86,8 @@ fun AnnouncementsScreenPreview() {
 fun CustomAnnouncementCard(announcement: Announcement) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(0.9f)
-            .padding(top = 12.dp),
+            .fillMaxWidth()
+            .padding(top = 4.dp),
         elevation = 24.dp
     ) {
         Column(

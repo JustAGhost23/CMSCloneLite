@@ -169,6 +169,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    //TODO: Make it stay apart
                     Spacer(modifier = Modifier.padding(horizontal =80.dp))
                     Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Announcements Arrow")
                 }

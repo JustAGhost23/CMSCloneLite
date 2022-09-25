@@ -40,14 +40,20 @@ fun SetupNavGraph(
                 EnrolledCourseDetailsScreen(navController = navController, course = course)
             }
         }
+        composable(route = Screen.EditCourseDetails.route) {
+            EditCourseDetailsScreen(navController = navController)
+        }
         composable(route = Screen.Announcements.route) {
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("courseAnnouncements")
             if (course != null) {
                 AnnouncementsScreen(navController = navController, course = course)
             }
         }
-        composable(route = Screen.EditCourseDetails.route) {
-            EditCourseDetailsScreen(navController = navController)
+        composable(route = Screen.AddAnnouncements.route) {
+            val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("courseAnnouncements")
+            if (course != null) {
+                AddAnnouncementsScreen(navController = navController, course = course)
+            }
         }
     }
 }

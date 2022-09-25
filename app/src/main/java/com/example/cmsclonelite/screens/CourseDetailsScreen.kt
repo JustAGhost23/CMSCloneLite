@@ -165,7 +165,11 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                     ) {
                         Button(
                             onClick = {
-                                //TODO: Implement Announcements feature through here
+                                navController.currentBackStackEntry?.savedStateHandle?.set(
+                                    key = "courseAnnouncements",
+                                    value = course
+                                )
+                                navController.navigate(Screen.Announcements.route)
                             },
                             modifier = Modifier.size(56.dp),
                             shape = CircleShape,

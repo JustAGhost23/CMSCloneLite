@@ -4,7 +4,9 @@ import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class CourseRepository {
@@ -103,5 +105,27 @@ class CourseRepository {
             courseList.add(course)
         }
         return courseList
+    }
+    fun addAnnouncement(db: FirebaseFirestore, courseId: String, announcement: Announcement) {
+        val coroutineScope = CoroutineScope(Dispatchers.IO)
+        coroutineScope.launch {
+            val announcementList = getAnnouncements(db, courseId)
+            val newAnnouncementList: ArrayList<Announcement> = arrayListOf()
+            val announcementHashMap: HashMap<String, HashMap<String, String>> = hashMapOf()
+            for(i in announcementList) {
+                newAnnouncementList.add(i)
+            }
+            newAnnouncementList.add(announcement)
+            var count = 1
+            for(i in newAnnouncementList) {
+                announcementHashMap.put("key${count}", hashMapOf(
+                    "title" to i.title!!,
+                    "body" to i.body!!
+                ))
+                count += 1
+            }
+            db.collection("courses").document(courseId)
+                .update("announcements", announcementHashMap)
+        }
     }
 }

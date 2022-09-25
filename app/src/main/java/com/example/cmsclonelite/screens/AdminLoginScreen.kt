@@ -129,7 +129,6 @@ fun AdminLoginScreen(
                     else {
                         firebaseAuthWithEmail(email, password, navController, context)
                     }
-
                 }
             ) {
                 Text(text = "Admin Login",
