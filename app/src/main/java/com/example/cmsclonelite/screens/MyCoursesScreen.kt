@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.FabPosition
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
@@ -20,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
@@ -60,7 +58,7 @@ fun MyCoursesScreen(mainNavController: NavHostController, mainViewModel: MainVie
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(items = list) { course ->
-                MyCoursesCustomItem(
+                MyCoursesCustomCard(
                     course = course,
                     navController = mainNavController
                 )
@@ -76,12 +74,11 @@ fun MyCoursesScreenPreview() {
     MyCoursesScreen(mainNavController = rememberNavController(), mainViewModel = mainViewModel)
 }
 @Composable
-fun MyCoursesCustomItem(course: Course, navController: NavHostController) {
-    Column(
+fun MyCoursesCustomCard(course: Course, navController: NavHostController) {
+    Card(
         modifier = Modifier
-            .clip(shape = RoundedCornerShape(12.dp))
-            .background(Color.LightGray)
             .fillMaxWidth()
+            .padding(top = 12.dp)
             .clickable(
                 onClick = {
                     navController.currentBackStackEntry?.savedStateHandle?.set(
@@ -89,24 +86,30 @@ fun MyCoursesCustomItem(course: Course, navController: NavHostController) {
                         value = course
                     )
                     navController.navigate(Screen.EnrolledCourseDetails.route)
-                })
-            .padding(vertical = 12.dp, horizontal = 12.dp),
-        horizontalAlignment = Alignment.Start
+                }
+            ),
+        elevation = 24.dp
     ) {
-        Row {
-            Text(
-                text = "${course.courseName}",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Spacer(modifier = Modifier.padding(vertical = 4.dp))
-        Row {
-            Text(
-                text = "${course.instructor}",
-                color = Color.Black,
-                fontWeight = FontWeight.Normal
-            )
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+            ) {
+                Text(
+                    "${course.courseName}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Row(
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+            ) {
+                Text(
+                    "${course.instructor}",
+                    fontSize = 16.sp
+                )
+            }
         }
     }
 }

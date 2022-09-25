@@ -135,7 +135,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                         ) {
-                            Text("Every ${course.days}, from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.startDateEndTime!!.hours.toString().padStart(2, '0')}:${course.startDateEndTime!!.minutes.toString().padStart(2, '0')}")
+                            Text("Every ${course.days.toString()} from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.startDateEndTime!!.hours.toString().padStart(2, '0')}:${course.startDateEndTime!!.minutes.toString().padStart(2, '0')}")
                         }
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)

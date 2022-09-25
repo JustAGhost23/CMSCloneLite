@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.ContentValues.TAG
 import android.content.Context
-import android.net.Uri
 import android.provider.CalendarContract
 import android.util.Log
 import android.widget.Toast
@@ -31,27 +30,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.core.app.ActivityCompat.requestPermissions
-import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
-import androidx.core.graphics.convertTo
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 import java.util.*
-import kotlin.collections.ArrayList
 
+private lateinit var mAuth: FirebaseAuth
 
 @Composable
 fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course) {
+    mAuth = FirebaseAuth.getInstance()
+    val email = mAuth.currentUser!!.email
     val context = LocalContext.current
     val showCalendarDialog = remember { mutableStateOf(false) }
     val requestWritePermissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if(isGranted) {
             showCalendarDialog.value = false
-            val calID: Long? = getCalendarId(context)
+            val calID: Long? = getCalendarId(context, email!!)
             val startMillis: Long = Calendar.getInstance().run {
                 set(
                     course.startDateStartTime!!.year + 1900,
@@ -84,8 +82,8 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                         course.endDateEndTime!!.minutes.toString().padStart(2, '0')
                     }${
                         course.endDateEndTime!!.seconds.toString().padStart(2, '0')
-                    }Z;BYDAY=${course.days}"
-                );
+                    }Z;BYDAY=${course.days.toString().substring(0, (course.days.toString().length-1))}"
+                )
             }
             context.contentResolver.insert(
                 CalendarContract.Events.CONTENT_URI,
@@ -131,6 +129,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                     onDismiss = {showCalendarDialog.value = false},
                     navController = navController,
                     course = course,
+                    email = email!!,
                     context = context,
                     requestWritePermissionsLauncher = requestWritePermissionsLauncher,
                     requestReadPermissionsLauncher =  requestReadPermissionsLauncher
@@ -189,6 +188,7 @@ fun CalendarExportConfirmation(
     onDismiss: () -> Unit,
     navController: NavHostController,
     course: Course,
+    email: String,
     context: Context,
     requestWritePermissionsLauncher: ManagedActivityResultLauncher<String, Boolean>,
     requestReadPermissionsLauncher: ManagedActivityResultLauncher<String, Boolean>
@@ -215,7 +215,7 @@ fun CalendarExportConfirmation(
                             requestWritePermissionsLauncher.launch(Manifest.permission.WRITE_CALENDAR)
                         }
                     else {
-                        val calID: Long? = getCalendarId(context)
+                        val calID: Long? = getCalendarId(context, email)
                         val startMillis: Long = Calendar.getInstance().run {
                             set(
                                 course.startDateStartTime!!.year + 1900,
@@ -248,7 +248,7 @@ fun CalendarExportConfirmation(
                                     course.endDateEndTime!!.minutes.toString().padStart(2, '0')
                                 }${
                                     course.endDateEndTime!!.seconds.toString().padStart(2, '0')
-                                }Z;BYDAY=${course.days}"
+                                }Z;BYDAY=${course.days.toString().substring(0, (course.days.toString().length-1))}"
                             );
                         }
                         context.contentResolver.insert(
@@ -274,13 +274,13 @@ fun CalendarExportConfirmation(
         )
     }
 }
-private fun getCalendarId(context: Context) : Long? {
+private fun getCalendarId(context: Context, email: String) : Long? {
     val projection = arrayOf(CalendarContract.Calendars._ID, CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
 
     var calCursor = context.contentResolver.query(
         CalendarContract.Calendars.CONTENT_URI,
         projection,
-        CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.IS_PRIMARY + "=1",
+        CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.ACCOUNT_NAME + " = '$email'",
         null,
         CalendarContract.Calendars._ID + " ASC"
     )
@@ -289,7 +289,7 @@ private fun getCalendarId(context: Context) : Long? {
         calCursor = context.contentResolver.query(
             CalendarContract.Calendars.CONTENT_URI,
             projection,
-            CalendarContract.Calendars.VISIBLE + " = 1",
+            CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.ACCOUNT_NAME + " = '$email'",
             null,
             CalendarContract.Calendars._ID + " ASC"
         )
