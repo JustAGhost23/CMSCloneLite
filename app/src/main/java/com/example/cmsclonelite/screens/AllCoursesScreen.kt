@@ -1,26 +1,19 @@
 package com.example.cmsclonelite.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.Screen
@@ -41,13 +34,6 @@ fun AllCoursesScreen(mainNavController: NavHostController, mainViewModel: MainVi
         mainViewModel.setTitle("All Courses")
         userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
         list = courseRepository.getData(db = db)
-    }
-    if(mAuth.currentUser!!.uid == ADMIN_ID) {
-        AddFAB(FabPosition.Center, onClick = {
-            mainNavController.navigate(Screen.EditCourseDetails.route)
-        }) {
-            Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
-        }
     }
     if(list.isEmpty()) {
         Box(
@@ -129,22 +115,4 @@ fun AllCoursesCustomCard(course: Course, navController: NavHostController, userE
             }
         }
     }
-}
-@Composable
-fun AddFAB(
-    fabPosition: FabPosition,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Scaffold(
-        floatingActionButtonPosition = fabPosition,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onClick,
-                modifier = modifier,
-                content = content
-            )
-        }
-    ) {}
 }

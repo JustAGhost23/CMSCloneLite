@@ -46,21 +46,24 @@ fun AnnouncementsScreen(navController: NavHostController, course: Course) {
                     }) {
                         Icon(Icons.Rounded.ArrowBack, "")
                     }
-                }
+                },
             )
         },
-    ) {
-        if(mAuth.currentUser!!.uid == ADMIN_ID) {
-            AddFAB(FabPosition.Center, onClick = {
-                navController.currentBackStackEntry?.savedStateHandle?.set(
-                    key = "courseAnnouncements",
-                    value = course
-                )
-                navController.navigate(Screen.AddAnnouncements.route)
-            }) {
-                Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
+        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButton = {
+            if(mAuth.currentUser!!.uid == ADMIN_ID) {
+                FloatingActionButton(onClick = {
+                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                        key = "courseAnnouncements",
+                        value = course
+                    )
+                    navController.navigate(Screen.AddAnnouncements.route)
+                }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
+                }
             }
         }
+    ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,

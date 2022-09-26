@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -146,6 +147,73 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Card(
+                modifier = Modifier.fillMaxWidth(0.9f)
+                    .padding(top =  12.dp),
+                elevation = 24.dp
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+                    ) {
+                        Text(
+                            "${course.courseName}",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Divider(color = Color.LightGray, modifier = Modifier.fillMaxWidth().width(1.dp))
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+                    ) {
+                        Text(
+                            "Instructor: ",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
+                    ) {
+                        Text(
+                            "${course.instructor}",
+                            fontSize = 16.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
+                    ) {
+                        Text(
+                            "Course Timings: ",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
+                    ) {
+                        Text("Every ${course.days.toString()} from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.startDateEndTime!!.hours.toString().padStart(2, '0')}:${course.startDateEndTime!!.minutes.toString().padStart(2, '0')}")
+                    }
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)
+                    ) {
+                        Text(
+                            "Start Date: ${course.startDateStartTime!!.date.toString().padStart(2, '0')}/${(course.startDateStartTime!!.month+1).toString().padStart(2, '0')}/${course.startDateStartTime!!.year + 1900}",
+                            fontSize = 16.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
+                    ) {
+                        Text(
+                            "End Date: ${course.endDateStartTime!!.date.toString().padStart(2, '0')}/${(course.endDateStartTime!!.month+1).toString().padStart(2, '0')}/${course.endDateStartTime!!.year + 1900}",
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+            }
+            Card(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .padding(top = 12.dp)
@@ -169,8 +237,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    //TODO: Make it stay apart
-                    Spacer(modifier = Modifier.padding(horizontal =80.dp))
+                    Spacer(Modifier.fillMaxWidth(0.85f))
                     Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Announcements Arrow")
                 }
             }
@@ -182,6 +249,24 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
 @Preview
 fun EnrolledCourseDetailsScreenPreview() {
     EnrolledCourseDetailsScreen(navController = rememberNavController(), course = Course())
+}
+@Composable
+fun AddFAB(
+    fabPosition: FabPosition,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Scaffold(
+        floatingActionButtonPosition = fabPosition,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onClick,
+                modifier = modifier,
+                content = content
+            )
+        }
+    ) {}
 }
 @Composable
 fun CalendarExportConfirmation(

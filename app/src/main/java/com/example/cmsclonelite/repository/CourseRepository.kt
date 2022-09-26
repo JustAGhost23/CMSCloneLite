@@ -16,8 +16,8 @@ class CourseRepository {
         return snapshot.documents
     }
     private suspend fun getUser(db: FirebaseFirestore, uid: String): DocumentSnapshot {
-        val coursesRef = db.collection("users").document(uid)
-        return coursesRef.get().await()
+        val usersRef = db.collection("users").document(uid)
+        return usersRef.get().await()
     }
     private suspend fun getCourse(db: FirebaseFirestore, courseId: String): DocumentSnapshot {
         val coursesRef = db.collection("courses").document(courseId)
@@ -115,14 +115,15 @@ class CourseRepository {
             for(i in announcementList) {
                 newAnnouncementList.add(i)
             }
+            newAnnouncementList.reverse()
             newAnnouncementList.add(announcement)
-            var count = 1
+            var count = newAnnouncementList.size
             for(i in newAnnouncementList) {
-                announcementHashMap.put("key${count}", hashMapOf(
+                announcementHashMap["key${count}"] = hashMapOf(
                     "title" to i.title!!,
                     "body" to i.body!!
-                ))
-                count += 1
+                )
+                count -= 1
             }
             db.collection("courses").document(courseId)
                 .update("announcements", announcementHashMap)

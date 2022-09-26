@@ -238,6 +238,9 @@ private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostContro
     mAuth.signInWithCredential(credential)
         .addOnCompleteListener(context.findActivity()) { task ->
             if(task.isSuccessful) {
+                val sharedPrefs = context
+                    .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
+                val fcmToken: String = sharedPrefs.getString("fcmToken", "")!!
                 val currentUserUid = mAuth.currentUser!!.uid
                 val userDoc = db.collection("users").document(currentUserUid)
                 userDoc.get().addOnCompleteListener { innerTask ->
@@ -245,11 +248,12 @@ private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostContro
                         val document = innerTask.result
                         if(document != null) {
                             if (document.exists()) {
-                                Log.d(TAG, "Document already exists.")
+                                Log.d(TAG, "Document already exists. Updating FCMToken")
                             } else {
                                 val userInfo = hashMapOf(
                                     "name" to mAuth.currentUser!!.displayName,
-                                    "enrolled" to listOf<String>()
+                                    "enrolled" to listOf<String>(),
+                                    "fcmToken" to fcmToken
                                 )
                                 db.collection("users").document(currentUserUid).set(userInfo)
                                 Log.d(TAG, "Document doesn't exist. Created new one")

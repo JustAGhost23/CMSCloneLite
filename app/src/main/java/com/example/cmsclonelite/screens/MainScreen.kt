@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -16,11 +18,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.BottomBarScreen
+import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.graphs.BottomBarNavGraph
 import com.example.cmsclonelite.viewmodels.MainViewModel
+import com.google.firebase.auth.FirebaseAuth
+
+private lateinit var mAuth: FirebaseAuth
 
 @Composable
 fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewModel = viewModel()) {
+    mAuth = FirebaseAuth.getInstance()
     val title: String by mainViewModel.screenTitle.observeAsState("")
     val bottomNavController = rememberNavController()
     Scaffold(
@@ -29,7 +36,17 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
                 title = { title?.let { Text(it) } }
             )
         },
-        bottomBar = { BottomBar(navController = bottomNavController) }
+        bottomBar = { BottomBar(navController = bottomNavController) },
+        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButton = {
+            if(title == "All Courses" && mAuth.currentUser!!.uid == ADMIN_ID) {
+                FloatingActionButton(onClick = {
+                    mainNavController.navigate(Screen.EditCourseDetails.route)
+                }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
+                }
+            }
+        }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             BottomBarNavGraph(mainNavController = mainNavController, bottomNavController = bottomNavController, mainViewModel = mainViewModel)
