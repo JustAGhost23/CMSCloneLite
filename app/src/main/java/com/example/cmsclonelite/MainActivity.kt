@@ -1,7 +1,11 @@
 package com.example.cmsclonelite
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +30,7 @@ class MainActivity : ComponentActivity() {
         mAuth = FirebaseAuth.getInstance()
         val user = mAuth.currentUser
         //val application = requireNotNull(this).application
+        createNotificationChannel()
         val sharedPrefs: SharedPreferences = getSharedPreferences("PREFERENCES", MODE_PRIVATE)
         val dark = sharedPrefs.getBoolean("darkTheme", false)
         setContent {
@@ -42,6 +47,18 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+    private fun createNotificationChannel(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Announcements"
+            val description = "Announcement Push Notification"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("Announcements", name, importance)
+            channel.description = description
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 }

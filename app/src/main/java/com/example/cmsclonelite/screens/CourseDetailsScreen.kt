@@ -29,6 +29,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 private lateinit var mAuth: FirebaseAuth
 
@@ -183,6 +184,10 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         }
                         Button(
                             onClick = {
+                                navController.currentBackStackEntry?.savedStateHandle?.set(
+                                    key = "courseEdit",
+                                    value = course
+                                )
                                 navController.navigate(Screen.EditCourseDetails.route)
                             },
                             modifier = Modifier.size(56.dp),
@@ -320,11 +325,13 @@ fun CourseEnrollConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
+                    FirebaseMessaging.getInstance().subscribeToTopic(course.id!!)
                     db.collection("users").document("${user.uid}")
                         .update("enrolled", FieldValue.arrayUnion("${course.id}"))
                         .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
                         .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error updating document", e) }
-                    navController.navigate(Screen.MainScreen.route)} ) {
+                    navController.navigate(Screen.MainScreen.route)
+                } ) {
                     Text("OK")
                 }
             },

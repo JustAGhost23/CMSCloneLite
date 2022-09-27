@@ -240,7 +240,7 @@ private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostContro
             if(task.isSuccessful) {
                 val sharedPrefs = context
                     .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
-                val fcmToken: String = sharedPrefs.getString("fcmToken", "")!!
+                val fcmToken = sharedPrefs.getString("fcmToken", "")
                 val currentUserUid = mAuth.currentUser!!.uid
                 val userDoc = db.collection("users").document(currentUserUid)
                 userDoc.get().addOnCompleteListener { innerTask ->

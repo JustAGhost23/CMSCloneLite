@@ -39,21 +39,20 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
     val courseRepository = CourseRepository()
     val db = FirebaseFirestore.getInstance()
     mAuth = FirebaseAuth.getInstance()
-    oneTapClient = Identity.getSignInClient(LocalContext.current)
-    val user = mAuth.currentUser
+    var totalCourses by remember { mutableStateOf(0) }
+    var enrolledCourses by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        mainViewModel.setTitle("Profile")
+        totalCourses = courseRepository.totalCourseCount(db)
+        enrolledCourses = courseRepository.userTotalEnrolledCourseCount(db, mAuth.currentUser!!.uid)
+    }
     val context = LocalContext.current
+    oneTapClient = Identity.getSignInClient(context)
     val sharedPrefs = context
         .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
     val dark = sharedPrefs.getBoolean("darkTheme", false)
     var checked by remember { mutableStateOf(dark) }
-    var totalCourses by remember { mutableStateOf(0) }
-    var enrolledCourses by remember { mutableStateOf(0) }
     val showDialog = remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        totalCourses = courseRepository.totalCourseCount(db)
-        enrolledCourses = courseRepository.userTotalEnrolledCourseCount(db, user!!.uid)
-        mainViewModel.setTitle("Profile")
-    }
     Card {
         if (showDialog.value) {
             LogoutConfirmation(showDialog = showDialog.value,
@@ -86,7 +85,7 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                 verticalAlignment = Alignment.Top,
             ) {
                 Text(
-                    text = if (user == null) "" else "${user.displayName}",
+                    text = if (mAuth.currentUser == null) "" else "${mAuth.currentUser!!.displayName}",
                     textAlign = TextAlign.Start,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -103,8 +102,8 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                     fontSize = 20.sp
                 )
             }
-            if(user != null) {
-                if (user.uid != ADMIN_ID) {
+            if(mAuth.currentUser != null) {
+                if (mAuth.currentUser!!.uid != ADMIN_ID) {
                     Spacer(modifier = Modifier.padding(top = 40.dp))
                     Row(
                         modifier = Modifier

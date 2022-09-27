@@ -18,6 +18,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.BottomBarScreen
+import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.graphs.BottomBarNavGraph
 import com.example.cmsclonelite.viewmodels.MainViewModel
@@ -33,7 +34,7 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { title?.let { Text(it) } }
+                title = { Text(title) }
             )
         },
         bottomBar = { BottomBar(navController = bottomNavController) },
@@ -41,6 +42,10 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
         floatingActionButton = {
             if(title == "All Courses" && mAuth.currentUser!!.uid == ADMIN_ID) {
                 FloatingActionButton(onClick = {
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        key = "courseEdit",
+                        value = Course()
+                    )
                     mainNavController.navigate(Screen.EditCourseDetails.route)
                 }) {
                     Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")

@@ -105,6 +105,10 @@ fun AddAnnouncementsScreen(navController: NavHostController, course: Course) {
                                 Toast.LENGTH_SHORT).show()
                         }
                         else {
+                            courseRepository.sendPushNotification(
+                                course,
+                                Announcement(title, body)
+                            )
                             courseRepository.addAnnouncement(
                                 db,
                                 course.id!!,
