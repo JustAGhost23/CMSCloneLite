@@ -192,8 +192,8 @@ class CourseRepository {
             jsonObject.put("topic", course.id)
             jsonObject.put("notification",
                 JSONObject().also {
-                    it.put("title", announcement.title)
-                    it.put("body", announcement.body)
+                    it.put("title", course.courseName)
+                    it.put("body", "A new notification with title \"${announcement.title}\" was created")
                 }
             )
         })

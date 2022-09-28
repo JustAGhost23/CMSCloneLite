@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Announcements"
             val description = "Announcement Push Notification"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel("Announcements", name, importance)
             channel.description = description
             val notificationManager: NotificationManager =

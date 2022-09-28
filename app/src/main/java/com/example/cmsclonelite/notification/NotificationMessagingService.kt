@@ -49,7 +49,7 @@ class NotificationMessagingService : FirebaseMessagingService() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(data["title"])
             .setContentText(data["body"])
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText((data["body"]))
             )

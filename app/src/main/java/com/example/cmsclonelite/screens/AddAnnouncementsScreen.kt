@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,6 +57,37 @@ fun AddAnnouncementsScreen(navController: NavHostController, course: Course) {
                     }
                 )
             },
+            floatingActionButtonPosition = FabPosition.Center,
+            floatingActionButton = {
+                FloatingActionButton(onClick = {
+                    if(title == "") {
+                        Toast.makeText(context.findActivity(), "Please enter the title of the announcement",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                    else if(body == "") {
+                        Toast.makeText(context.findActivity(), "Please enter the body of the announcement",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                    else {
+                        courseRepository.sendPushNotification(
+                            course,
+                            Announcement(title, body)
+                        )
+                        courseRepository.addAnnouncement(
+                            db,
+                            course.id!!,
+                            Announcement(title, body)
+                        )
+                        navController.navigate(Screen.MainScreen.route) {
+                            popUpTo(Screen.MainScreen.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add Announcement (Admin Only)")
+                }
+            }
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -79,7 +111,8 @@ fun AddAnnouncementsScreen(navController: NavHostController, course: Course) {
                     })
                 Spacer(modifier = Modifier.padding(top = 20.dp))
                 TextField(
-                    modifier = Modifier.fillMaxWidth(0.9f)
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
                         .fillMaxHeight(0.3f),
                     value = body,
                     colors = TextFieldDefaults.textFieldColors(),
@@ -93,38 +126,6 @@ fun AddAnnouncementsScreen(navController: NavHostController, course: Course) {
                     onValueChange = {
                         body = it
                     })
-                Spacer(modifier = Modifier.padding(top = 100.dp))
-                Button(
-                    onClick = {
-                        if(title == "") {
-                            Toast.makeText(context.findActivity(), "Please enter the title of the announcement",
-                                Toast.LENGTH_SHORT).show()
-                        }
-                        else if(body == "") {
-                            Toast.makeText(context.findActivity(), "Please enter the body of the announcement",
-                                Toast.LENGTH_SHORT).show()
-                        }
-                        else {
-                            courseRepository.sendPushNotification(
-                                course,
-                                Announcement(title, body)
-                            )
-                            courseRepository.addAnnouncement(
-                                db,
-                                course.id!!,
-                                Announcement(title, body)
-                            )
-                            navController.navigate(Screen.MainScreen.route) {
-                                popUpTo(Screen.MainScreen.route) {
-                                    inclusive = true
-                                }
-                            }
-                        }
-                    }
-                ) {
-                    Text(text = "Add Announcement",
-                        fontSize = 15.sp)
-                }
             }
         }
     }
