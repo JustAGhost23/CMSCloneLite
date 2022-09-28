@@ -335,7 +335,6 @@ fun CourseUnenrollConfirmation(
         )
     }
 }
-
 @Composable
 fun CalendarExportConfirmation(
     showDialog: Boolean,

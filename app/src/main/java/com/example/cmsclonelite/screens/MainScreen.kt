@@ -1,13 +1,15 @@
 package com.example.cmsclonelite.screens
 
+import android.content.ContentValues
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,16 +23,45 @@ import com.example.cmsclonelite.BottomBarScreen
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.graphs.BottomBarNavGraph
+import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.viewmodels.MainViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
 fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewModel = viewModel()) {
+    val db = FirebaseFirestore.getInstance()
     mAuth = FirebaseAuth.getInstance()
+    val courseRepository = CourseRepository()
+    var userEnrolledCourseList: List<String>? by remember { mutableStateOf(mutableListOf()) }
+    val showUnenrollAllDialog = remember { mutableStateOf(false) }
     val title: String by mainViewModel.screenTitle.observeAsState("")
     val bottomNavController = rememberNavController()
+    LaunchedEffect(Unit) {
+        userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
+    }
+    Card {
+        if(userEnrolledCourseList != null) {
+            if (showUnenrollAllDialog.value) {
+                CourseUnenrollAllConfirmation(
+                    showDialog = showUnenrollAllDialog.value,
+                    onDismiss = { showUnenrollAllDialog.value = false },
+                    navController = mainNavController,
+                    db = db,
+                    user = mAuth.currentUser!!,
+                    userEnrolledCourseList = userEnrolledCourseList!!
+                )
+            }
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,6 +80,13 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
                     mainNavController.navigate(Screen.EditCourseDetails.route)
                 }) {
                     Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
+                }
+            }
+            else if(title == "My Courses" && mAuth.currentUser!!.uid != ADMIN_ID) {
+                FloatingActionButton(onClick = {
+                    showUnenrollAllDialog.value = true
+                }) {
+                    Icon(Icons.Filled.DeleteForever, contentDescription = "Unenroll from all courses")
                 }
             }
         }
@@ -107,4 +145,66 @@ fun RowScope.AddItem(
             }
         }
     )
+}
+
+@Composable
+fun CourseUnenrollAllConfirmation(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    navController: NavHostController,
+    db: FirebaseFirestore,
+    user: FirebaseUser,
+    userEnrolledCourseList: List<String>
+) {
+    if (showDialog) {
+        AlertDialog(
+            title = {
+                Text(if(userEnrolledCourseList.isEmpty())"No Courses Available" else "Unenroll from all Courses")
+            },
+            text = {
+                Text(if(userEnrolledCourseList.isEmpty())"You have not enrolled in any course yet" else "Are you sure you want to unenroll from all courses?")
+            },
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick =  {
+                    if(userEnrolledCourseList.isEmpty()) {
+                        navController.navigate(Screen.MainScreen.route) {
+                            popUpTo(Screen.MainScreen.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                    else {
+                        for (course in userEnrolledCourseList) {
+                            FirebaseMessaging.getInstance().unsubscribeFromTopic(course)
+                        }
+                        db.collection("users").document("${user.uid}")
+                            .update("enrolled", listOf<String>())
+                            .addOnSuccessListener {
+                                Log.d(
+                                    ContentValues.TAG,
+                                    "DocumentSnapshot successfully updated!"
+                                )
+                            }
+                            .addOnFailureListener { e: Exception? ->
+                                Log.w(ContentValues.TAG, "Error updating document", e)
+                            }
+                        navController.navigate(Screen.MainScreen.route) {
+                            popUpTo(Screen.MainScreen.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
