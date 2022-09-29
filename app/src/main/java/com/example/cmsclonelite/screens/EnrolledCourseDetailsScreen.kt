@@ -78,11 +78,11 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                 )
                 put(
                     CalendarContract.Events.RRULE,
-                    "FREQ=WEEKLY;UNTIL=${course.endDateStartTime!!.year + 1900}${
-                        (course.endDateStartTime!!.month + 1).toString()
+                    "FREQ=WEEKLY;UNTIL=${course.endDateEndTime!!.year + 1900}${
+                        (course.endDateEndTime!!.month + 1).toString()
                             .padStart(2, '0')
                     }${
-                        course.endDateStartTime!!.date.toString().padStart(2, '0')
+                        course.endDateEndTime!!.date.toString().padStart(2, '0')
                     }T${
                         course.endDateEndTime!!.hours.toString().padStart(2, '0')
                     }${
@@ -207,7 +207,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                     Row(
                         modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                     ) {
-                        Text("Every ${course.days.toString()} from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.startDateEndTime!!.hours.toString().padStart(2, '0')}:${course.startDateEndTime!!.minutes.toString().padStart(2, '0')}")
+                        Text("Every ${course.days.toString()} from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.endDateEndTime!!.hours.toString().padStart(2, '0')}:${course.endDateEndTime!!.minutes.toString().padStart(2, '0')}")
                     }
                     Row(
                         modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)
@@ -221,7 +221,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                         modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                     ) {
                         Text(
-                            "End Date: ${course.endDateStartTime!!.date.toString().padStart(2, '0')}/${(course.endDateStartTime!!.month+1).toString().padStart(2, '0')}/${course.endDateStartTime!!.year + 1900}",
+                            "End Date: ${course.endDateEndTime!!.date.toString().padStart(2, '0')}/${(course.endDateEndTime!!.month+1).toString().padStart(2, '0')}/${course.endDateEndTime!!.year + 1900}",
                             fontSize = 16.sp
                         )
                     }
@@ -390,11 +390,11 @@ fun CalendarExportConfirmation(
                             )
                             put(
                                 CalendarContract.Events.RRULE,
-                                "FREQ=WEEKLY;UNTIL=${course.endDateStartTime!!.year + 1900}${
-                                    (course.endDateStartTime!!.month + 1).toString()
+                                "FREQ=WEEKLY;UNTIL=${course.endDateEndTime!!.year + 1900}${
+                                    (course.endDateEndTime!!.month + 1).toString()
                                         .padStart(2, '0')
                                 }${
-                                    course.endDateStartTime!!.date.toString().padStart(2, '0')
+                                    course.endDateEndTime!!.date.toString().padStart(2, '0')
                                 }T${
                                     course.endDateEndTime!!.hours.toString().padStart(2, '0')
                                 }${

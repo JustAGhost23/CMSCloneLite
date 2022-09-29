@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -15,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
-import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.viewmodels.MainViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -26,15 +26,14 @@ private lateinit var mAuth: FirebaseAuth
 
 @Composable
 fun MyCoursesScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
-    var list: List<Course> by remember { mutableStateOf(mutableListOf()) }
-    mAuth = FirebaseAuth.getInstance()
-    val db = FirebaseFirestore.getInstance()
-    val courseRepository = CourseRepository()
     LaunchedEffect(Unit) {
         mainViewModel.setTitle("My Courses")
-        list = courseRepository.getUserEnrolledCoursesData(db, mAuth.currentUser!!.uid)
     }
-    if (list.isEmpty()) {
+    val enrolledCourseList: List<Course> by mainViewModel.enrolledCourseList.observeAsState(listOf())
+    mainViewModel.getCoursesEnrolledList()
+    mAuth = FirebaseAuth.getInstance()
+
+    if (enrolledCourseList.isEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize(),
@@ -51,10 +50,11 @@ fun MyCoursesScreen(mainNavController: NavHostController, mainViewModel: MainVie
             contentPadding = PaddingValues(vertical = 20.dp, horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(items = list) { course ->
+            items(items = enrolledCourseList) { course ->
                 MyCoursesCustomCard(
                     course = course,
-                    navController = mainNavController
+                    navController = mainNavController,
+                    mainViewModel = mainViewModel
                 )
             }
         }
@@ -64,22 +64,21 @@ fun MyCoursesScreen(mainNavController: NavHostController, mainViewModel: MainVie
 @Composable
 @Preview
 fun MyCoursesScreenPreview() {
-    val mainViewModel = MainViewModel()
+    val db = FirebaseFirestore.getInstance()
+    val mAuth = FirebaseAuth.getInstance()
+    val courseRepository = CourseRepository()
+    val mainViewModel = MainViewModel(db, mAuth, courseRepository)
     MyCoursesScreen(mainNavController = rememberNavController(), mainViewModel = mainViewModel)
 }
 @Composable
-fun MyCoursesCustomCard(course: Course, navController: NavHostController) {
+fun MyCoursesCustomCard(course: Course, navController: NavHostController, mainViewModel: MainViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 4.dp)
             .clickable(
                 onClick = {
-                    navController.currentBackStackEntry?.savedStateHandle?.set(
-                        key = "course",
-                        value = course
-                    )
-                    navController.navigate(Screen.EnrolledCourseDetails.route)
+                    mainViewModel.myCoursesToEnrolledCourse(navController, course)
                 }
             ),
         elevation = 24.dp

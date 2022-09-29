@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -18,22 +19,22 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
-import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
+import com.example.cmsclonelite.viewmodels.AnnouncementsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun AnnouncementsScreen(navController: NavHostController, course: Course) {
+fun AnnouncementsScreen(
+    navController: NavHostController,
+    course: Course,
+    announcementsViewModel: AnnouncementsViewModel
+) {
     mAuth = FirebaseAuth.getInstance()
-    var announcementList: List<Announcement> by remember { mutableStateOf(mutableListOf()) }
-    val db = FirebaseFirestore.getInstance()
-    val courseRepository = CourseRepository()
-    LaunchedEffect(Unit) {
-        announcementList = courseRepository.getAnnouncements(db = db, course.id)
-    }
+    val announcementList: List<Announcement> by announcementsViewModel.allAnnouncementsList.observeAsState(listOf())
+    announcementsViewModel.getAllAnnouncementsList(course.id!!)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -53,11 +54,7 @@ fun AnnouncementsScreen(navController: NavHostController, course: Course) {
         floatingActionButton = {
             if(mAuth.currentUser!!.uid == ADMIN_ID) {
                 FloatingActionButton(onClick = {
-                    navController.currentBackStackEntry?.savedStateHandle?.set(
-                        key = "courseAnnouncements",
-                        value = course
-                    )
-                    navController.navigate(Screen.AddAnnouncements.route)
+                    announcementsViewModel.allAnnouncementsToAddCourseDetails(navController, course)
                 }) {
                     Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
                 }
@@ -83,7 +80,11 @@ fun AnnouncementsScreen(navController: NavHostController, course: Course) {
 @Composable
 @Preview
 fun AnnouncementsScreenPreview() {
-    AnnouncementsScreen(navController = rememberNavController(), course = Course())
+    val db = FirebaseFirestore.getInstance()
+    val mAuth = FirebaseAuth.getInstance()
+    val courseRepository = CourseRepository()
+    val announcementsViewModel = AnnouncementsViewModel(db, mAuth, courseRepository)
+    AnnouncementsScreen(rememberNavController(), Course(), announcementsViewModel)
 }
 @Composable
 fun CustomAnnouncementCard(announcement: Announcement) {

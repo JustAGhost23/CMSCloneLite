@@ -13,8 +13,6 @@ data class Course (
     var instructor: String? = null,
     var days: String? = null,
     var startDateStartTime: @RawValue Date? = null,
-    var startDateEndTime: @RawValue Date? = null,
-    var endDateStartTime: @RawValue Date? = null,
     var endDateEndTime: @RawValue Date? = null,
     var announcements: HashMap<String, HashMap<String, String>> = hashMapOf()
 ): Parcelable

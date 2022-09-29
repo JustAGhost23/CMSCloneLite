@@ -9,17 +9,17 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.graphs.SetupNavGraph
+import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.ui.theme.CMSCloneLiteTheme
 import com.example.cmsclonelite.viewmodels.*
 import com.google.firebase.auth.FirebaseAuth
-
-
-val profileViewModel = ProfileViewModel()
+import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
     private lateinit var navController: NavHostController
@@ -28,9 +28,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mAuth = FirebaseAuth.getInstance()
-        val user = mAuth.currentUser
-        //val application = requireNotNull(this).application
+        val db = FirebaseFirestore.getInstance()
+        val courseRepository = CourseRepository()
+
+        val loginViewModel: LoginViewModel by viewModels {
+            LoginViewModelFactory(db, mAuth)
+        }
+
+        val mainViewModel: MainViewModel by viewModels {
+            MainViewModelFactory(db, mAuth, courseRepository)
+        }
+
+        val profileViewModel: ProfileViewModel by viewModels {
+            ProfileViewModelFactory()
+        }
+
+        val announcementsViewModel: AnnouncementsViewModel by viewModels {
+            AnnouncementsViewModelFactory(db, mAuth, courseRepository)
+        }
+
         createNotificationChannel()
+
         val sharedPrefs: SharedPreferences = getSharedPreferences("PREFERENCES", MODE_PRIVATE)
         val dark = sharedPrefs.getBoolean("darkTheme", false)
         setContent {
@@ -38,8 +56,14 @@ class MainActivity : ComponentActivity() {
             CMSCloneLiteTheme(darkTheme = darkTheme){
                 this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 navController = rememberNavController()
-                SetupNavGraph(navController = navController)
-                if(user == null) {
+                SetupNavGraph(
+                    navController = navController,
+                    loginViewModel = loginViewModel,
+                    mainViewModel = mainViewModel,
+                    profileViewModel = profileViewModel,
+                    announcementsViewModel = announcementsViewModel
+                )
+                if(mAuth.currentUser == null) {
                     navController.navigate(route = Screen.Login.route) {
                         popUpTo(Screen.MainScreen.route) {
                             inclusive = true

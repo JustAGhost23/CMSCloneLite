@@ -1,7 +1,5 @@
 package com.example.cmsclonelite.screens
 
-import android.content.ContentValues
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
@@ -12,7 +10,6 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -20,46 +17,30 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.BottomBarScreen
-import com.example.cmsclonelite.Course
-import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.graphs.BottomBarNavGraph
-import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.viewmodels.MainViewModel
+import com.example.cmsclonelite.viewmodels.ProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewModel = viewModel()) {
-    val db = FirebaseFirestore.getInstance()
+fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewModel, profileViewModel: ProfileViewModel) {
     mAuth = FirebaseAuth.getInstance()
-    val courseRepository = CourseRepository()
-    var userEnrolledCourseList: List<String>? by remember { mutableStateOf(mutableListOf()) }
-    val showUnenrollAllDialog = remember { mutableStateOf(false) }
     val title: String by mainViewModel.screenTitle.observeAsState("")
+    val showUnenrollAllDialog: Boolean by mainViewModel.isUnenrollAllDialog.observeAsState(false)
+    val userEnrolledCourseList: List<String> by mainViewModel.enrolledCourseIdList.observeAsState(listOf())
+    mainViewModel.getCourseEnrollIdList()
     val bottomNavController = rememberNavController()
-    LaunchedEffect(Unit) {
-        userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
-    }
     Card {
-        if(userEnrolledCourseList != null) {
-            if (showUnenrollAllDialog.value) {
-                CourseUnenrollAllConfirmation(
-                    showDialog = showUnenrollAllDialog.value,
-                    onDismiss = { showUnenrollAllDialog.value = false },
-                    navController = mainNavController,
-                    db = db,
-                    user = mAuth.currentUser!!,
-                    userEnrolledCourseList = userEnrolledCourseList!!
-                )
-            }
+        if (showUnenrollAllDialog) {
+            CourseUnenrollAllConfirmation(
+                showDialog = showUnenrollAllDialog,
+                onDismiss = { mainViewModel.removeUnenrollDialog() },
+                navController = mainNavController,
+                userEnrolledCourseList = userEnrolledCourseList,
+                mainViewModel = mainViewModel
+            )
         }
     }
     Scaffold(
@@ -73,18 +54,14 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
         floatingActionButton = {
             if(title == "All Courses" && mAuth.currentUser!!.uid == ADMIN_ID) {
                 FloatingActionButton(onClick = {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        key = "courseEdit",
-                        value = Course()
-                    )
-                    mainNavController.navigate(Screen.EditCourseDetails.route)
+                    mainViewModel.allCoursesToEditCourseDetails(mainNavController)
                 }) {
                     Icon(Icons.Filled.Add, contentDescription = "Add Courses (Admin Only)")
                 }
             }
             else if(title == "My Courses" && mAuth.currentUser!!.uid != ADMIN_ID) {
                 FloatingActionButton(onClick = {
-                    showUnenrollAllDialog.value = true
+                    mainViewModel.showUnenrollDialog()
                 }) {
                     Icon(Icons.Filled.DeleteForever, contentDescription = "Unenroll from all courses")
                 }
@@ -92,7 +69,12 @@ fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewMode
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            BottomBarNavGraph(mainNavController = mainNavController, bottomNavController = bottomNavController, mainViewModel = mainViewModel)
+            BottomBarNavGraph(
+                mainNavController = mainNavController,
+                bottomNavController = bottomNavController,
+                mainViewModel = mainViewModel,
+                profileViewModel = profileViewModel
+            )
         }
     }
 }
@@ -152,9 +134,8 @@ fun CourseUnenrollAllConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     navController: NavHostController,
-    db: FirebaseFirestore,
-    user: FirebaseUser,
-    userEnrolledCourseList: List<String>
+    userEnrolledCourseList: List<String>,
+    mainViewModel: MainViewModel
 ) {
     if (showDialog) {
         AlertDialog(
@@ -167,34 +148,7 @@ fun CourseUnenrollAllConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick =  {
-                    if(userEnrolledCourseList.isEmpty()) {
-                        navController.navigate(Screen.MainScreen.route) {
-                            popUpTo(Screen.MainScreen.route) {
-                                inclusive = true
-                            }
-                        }
-                    }
-                    else {
-                        for (course in userEnrolledCourseList) {
-                            FirebaseMessaging.getInstance().unsubscribeFromTopic(course)
-                        }
-                        db.collection("users").document("${user.uid}")
-                            .update("enrolled", listOf<String>())
-                            .addOnSuccessListener {
-                                Log.d(
-                                    ContentValues.TAG,
-                                    "DocumentSnapshot successfully updated!"
-                                )
-                            }
-                            .addOnFailureListener { e: Exception? ->
-                                Log.w(ContentValues.TAG, "Error updating document", e)
-                            }
-                        navController.navigate(Screen.MainScreen.route) {
-                            popUpTo(Screen.MainScreen.route) {
-                                inclusive = true
-                            }
-                        }
-                    }
+                    mainViewModel.unenrollAll(navController, userEnrolledCourseList)
                 }
                 ) {
                     Text("OK")

@@ -136,7 +136,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                         ) {
-                            Text("Every ${course.days.toString()} from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.startDateEndTime!!.hours.toString().padStart(2, '0')}:${course.startDateEndTime!!.minutes.toString().padStart(2, '0')}")
+                            Text("Every ${course.days.toString()} from ${course.startDateStartTime!!.hours.toString().padStart(2, '0')}:${course.startDateStartTime!!.minutes.toString().padStart(2, '0')} to ${course.endDateEndTime!!.hours.toString().padStart(2, '0')}:${course.endDateEndTime!!.minutes.toString().padStart(2, '0')}")
                         }
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)
@@ -150,7 +150,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp)
                         ) {
                             Text(
-                                "End Date: ${course.endDateStartTime!!.date.toString().padStart(2, '0')}/${(course.endDateStartTime!!.month+1).toString().padStart(2, '0')}/${course.endDateStartTime!!.year + 1900}",
+                                "End Date: ${course.endDateEndTime!!.date.toString().padStart(2, '0')}/${(course.endDateEndTime!!.month+1).toString().padStart(2, '0')}/${course.endDateEndTime!!.year + 1900}",
                                 fontSize = 16.sp
                             )
                         }
@@ -293,7 +293,12 @@ fun CourseDeletionConfirmation(
                         .delete()
                         .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully deleted!") }
                         .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error deleting document", e) }
-                    navController.navigate(Screen.MainScreen.route)} ) {
+                    navController.navigate(Screen.MainScreen.route) {
+                        popUpTo(Screen.MainScreen.route) {
+                            inclusive = true
+                        }
+                    }
+                } ) {
                     Text("OK")
                 }
             },
@@ -330,8 +335,12 @@ fun CourseEnrollConfirmation(
                         .update("enrolled", FieldValue.arrayUnion("${course.id}"))
                         .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
                         .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error updating document", e) }
-                    navController.navigate(Screen.MainScreen.route)
-                } ) {
+                    navController.navigate(Screen.MainScreen.route) {
+                        popUpTo(Screen.MainScreen.route) {
+                            inclusive = true
+                        }
+                    }
+                }) {
                     Text("OK")
                 }
             },

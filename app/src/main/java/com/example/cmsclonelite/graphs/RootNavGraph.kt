@@ -7,23 +7,31 @@ import androidx.navigation.compose.composable
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.screens.*
+import com.example.cmsclonelite.viewmodels.AnnouncementsViewModel
+import com.example.cmsclonelite.viewmodels.LoginViewModel
 import com.example.cmsclonelite.viewmodels.MainViewModel
+import com.example.cmsclonelite.viewmodels.ProfileViewModel
 
 @Composable
 fun SetupNavGraph(
-    navController: NavHostController) {
+    navController: NavHostController,
+    loginViewModel: LoginViewModel,
+    mainViewModel: MainViewModel,
+    profileViewModel: ProfileViewModel,
+    announcementsViewModel: AnnouncementsViewModel
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.MainScreen.route
     ) {
         composable(route = Screen.Login.route) {
-            LoginScreen(navController = navController)
+            LoginScreen(navController = navController, loginViewModel = loginViewModel)
         }
         composable(route = Screen.AdminLogin.route) {
-            AdminLoginScreen(navController = navController)
+            AdminLoginScreen(navController = navController, loginViewModel = loginViewModel)
         }
         composable(route = Screen.MainScreen.route) {
-            MainScreen(mainNavController = navController)
+            MainScreen(mainNavController = navController, mainViewModel = mainViewModel, profileViewModel = profileViewModel)
         }
         composable(route = Screen.About.route) {
             AboutScreen(navController = navController)
@@ -49,13 +57,13 @@ fun SetupNavGraph(
         composable(route = Screen.Announcements.route) {
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("courseAnnouncements")
             if (course != null) {
-                AnnouncementsScreen(navController = navController, course = course)
+                AnnouncementsScreen(navController = navController, course = course, announcementsViewModel = announcementsViewModel)
             }
         }
         composable(route = Screen.AddAnnouncements.route) {
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("courseAnnouncements")
             if (course != null) {
-                AddAnnouncementsScreen(navController = navController, course = course)
+                AddAnnouncementsScreen(navController = navController, course = course, announcementsViewModel = announcementsViewModel)
             }
         }
     }

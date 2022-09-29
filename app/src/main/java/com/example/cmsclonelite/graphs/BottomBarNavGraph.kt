@@ -9,21 +9,37 @@ import com.example.cmsclonelite.screens.AllCoursesScreen
 import com.example.cmsclonelite.screens.MyCoursesScreen
 import com.example.cmsclonelite.screens.ProfileScreen
 import com.example.cmsclonelite.viewmodels.MainViewModel
+import com.example.cmsclonelite.viewmodels.ProfileViewModel
 
 @Composable
-fun BottomBarNavGraph(mainNavController: NavHostController, bottomNavController: NavHostController, mainViewModel: MainViewModel) {
+fun BottomBarNavGraph(
+    mainNavController: NavHostController,
+    bottomNavController: NavHostController,
+    mainViewModel: MainViewModel,
+    profileViewModel: ProfileViewModel
+) {
     NavHost(
         navController = bottomNavController,
         startDestination = BottomBarScreen.MyCourses.route
     ) {
         composable(route = BottomBarScreen.MyCourses.route) {
-            MyCoursesScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)
+            MyCoursesScreen(
+                mainNavController = mainNavController,
+                mainViewModel = mainViewModel
+            )
         }
         composable(route = BottomBarScreen.AllCourses.route) {
-            AllCoursesScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)
+            AllCoursesScreen(
+                mainNavController = mainNavController,
+                mainViewModel = mainViewModel
+            )
         }
         composable(route = BottomBarScreen.Profile.route) {
-            ProfileScreen(mainNavController = mainNavController, mainViewModel = mainViewModel)
+            ProfileScreen(
+                mainNavController = mainNavController,
+                mainViewModel = mainViewModel,
+                profileViewModel = profileViewModel
+            )
         }
     }
 }

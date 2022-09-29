@@ -1,11 +1,8 @@
 package com.example.cmsclonelite.screens
 
 import android.app.Activity
+import android.content.*
 import android.content.ContentValues.TAG
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.content.IntentSender
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -13,8 +10,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,17 +26,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.R
 import com.example.cmsclonelite.Screen
+import com.example.cmsclonelite.viewmodels.LoginViewModel
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
-
-private const val CLIENT_ID = "557828460372-0184fqcfulugr78smv592m76u2rsqppm.apps.googleusercontent.com"
-//TODO: Make Constants file and move constants there
 
 private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
@@ -49,31 +43,15 @@ private var showOneTapUI = true
 
 @Composable
 fun LoginScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    loginViewModel: LoginViewModel
 ) {
     val context = LocalContext.current
-    val db = FirebaseFirestore.getInstance()
     mAuth = FirebaseAuth.getInstance()
-    oneTapClient = Identity.getSignInClient(LocalContext.current)
-    signInRequest = BeginSignInRequest.builder()
-        .setPasswordRequestOptions(BeginSignInRequest.PasswordRequestOptions.builder()
-            .setSupported(true)
-            .build())
-        .setGoogleIdTokenRequestOptions(
-            BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                .setSupported(true)
-                .setServerClientId(CLIENT_ID)
-                .setFilterByAuthorizedAccounts(false)
-                .build())
-        .build()
-    signUpRequest = BeginSignInRequest.builder()
-        .setGoogleIdTokenRequestOptions(
-            BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                .setSupported(true)
-                .setServerClientId(CLIENT_ID)
-                .setFilterByAuthorizedAccounts(false)
-                .build())
-        .build()
+    oneTapClient = Identity.getSignInClient(context)
+    signInRequest = loginViewModel.signInRequest
+    signUpRequest = loginViewModel.signUpRequest
+    val showNoGoogleAlertDialog: Boolean by loginViewModel.isNoGoogleAccountDialog.observeAsState(false)
     val loginResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         if(result.resultCode == Activity.RESULT_OK) {
             val data: Intent? = result.data
@@ -83,7 +61,7 @@ fun LoginScreen(
                 val idToken = credential.googleIdToken
                 when {
                     idToken != null -> {
-                        firebaseAuthWithGoogle(idToken, navController, context, db)
+                        loginViewModel.googleLogin(context, idToken, navController)
                         Log.d(TAG, "Got ID token.")
                     }
                     else -> {
@@ -99,8 +77,9 @@ fun LoginScreen(
                     Log.d(TAG, "One-tap encountered a network error.")
                 }
                 else -> {
-                    Log.d(TAG, "Couldn't get credential from result." +
-                            " (${e.localizedMessage})")
+                    Log.d(
+                        TAG, "Couldn't get credential from result." +
+                                " (${e.localizedMessage})")
                 }
             }
             }
@@ -110,11 +89,10 @@ fun LoginScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background
     ) {
-        val showDialog = remember { mutableStateOf(false) }
         Card {
-            if (showDialog.value) {
-                NoGoogleAccountAlert(showDialog = showDialog.value,
-                    onDismiss = {showDialog.value = false})
+            if (showNoGoogleAlertDialog) {
+                NoGoogleAccountAlert(showDialog = showNoGoogleAlertDialog,
+                    onDismiss = { loginViewModel.removeNoGoogleAccountAlert()})
             }
         }
         Column(
@@ -149,15 +127,15 @@ fun LoginScreen(
                                 .addOnSuccessListener(context.findActivity()) { result ->
                                     try {
                                         loginResultLauncher.launch(
-                                        IntentSenderRequest.Builder(result.pendingIntent.intentSender)
-                                            .build()
+                                            IntentSenderRequest.Builder(result.pendingIntent.intentSender)
+                                                .build()
                                         )
                                     } catch (e: IntentSender.SendIntentException) {
                                         Log.e(TAG, "Couldn't start One Tap UI: ${e.localizedMessage}")
                                     }
                                 }
                                 .addOnFailureListener(context.findActivity()) { e: Exception ->
-                                    showDialog.value = true
+                                    loginViewModel.showNoGoogleAccountAlert()
                                     e.localizedMessage?.let { Log.d(TAG, it) }
                                 }
                         }
@@ -201,7 +179,10 @@ fun LoginScreen(
 @Preview
 @Composable
 fun LoginPreview() {
-    LoginScreen(rememberNavController())
+    val db = FirebaseFirestore.getInstance()
+    mAuth = FirebaseAuth.getInstance()
+    val loginViewModel = LoginViewModel(db, mAuth)
+    LoginScreen(rememberNavController(), loginViewModel)
 }
 @Composable
 fun NoGoogleAccountAlert(showDialog: Boolean,
@@ -231,48 +212,4 @@ fun Context.findActivity(): Activity {
         context = context.baseContext
     }
     throw IllegalStateException("no activity")
-}
-
-private fun firebaseAuthWithGoogle(idToken: String, navController: NavHostController, context: Context, db: FirebaseFirestore) {
-    val credential = GoogleAuthProvider.getCredential(idToken, null)
-    mAuth.signInWithCredential(credential)
-        .addOnCompleteListener(context.findActivity()) { task ->
-            if(task.isSuccessful) {
-                val sharedPrefs = context
-                    .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
-                val fcmToken = sharedPrefs.getString("fcmToken", "")
-                val currentUserUid = mAuth.currentUser!!.uid
-                val userDoc = db.collection("users").document(currentUserUid)
-                userDoc.get().addOnCompleteListener { innerTask ->
-                    if (innerTask.isSuccessful) {
-                        val document = innerTask.result
-                        if(document != null) {
-                            if (document.exists()) {
-                                Log.d(TAG, "Document already exists. Updating FCMToken")
-                            } else {
-                                val userInfo = hashMapOf(
-                                    "name" to mAuth.currentUser!!.displayName,
-                                    "enrolled" to listOf<String>(),
-                                    "fcmToken" to fcmToken
-                                )
-                                db.collection("users").document(currentUserUid).set(userInfo)
-                                Log.d(TAG, "Document doesn't exist. Created new one")
-                            }
-                        }
-                    } else {
-                        Log.d("TAG", "Error: ", task.exception)
-                    }
-                }
-                Log.d(TAG, "Signed In with Credential")
-                navController.navigate(route = Screen.MainScreen.route) {
-                    popUpTo(Screen.Login.route) {
-                        inclusive = true
-                    }
-                }
-            }
-            else {
-                Log.w(TAG, "Failed to Sign In with One Tap")
-            }
-        }
-
 }

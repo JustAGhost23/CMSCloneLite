@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.List
 import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -22,10 +23,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.Screen
-import com.example.cmsclonelite.profileViewModel
+import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.viewmodels.MainViewModel
+import com.example.cmsclonelite.viewmodels.ProfileViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
@@ -35,29 +36,33 @@ private lateinit var mAuth: FirebaseAuth
 private lateinit var oneTapClient: SignInClient
 
 @Composable
-fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
-    val courseRepository = CourseRepository()
-    val db = FirebaseFirestore.getInstance()
-    mAuth = FirebaseAuth.getInstance()
-    var totalCourses by remember { mutableStateOf(0) }
-    var enrolledCourses by remember { mutableStateOf(0) }
+fun ProfileScreen(
+    mainNavController: NavHostController,
+    mainViewModel: MainViewModel,
+    profileViewModel: ProfileViewModel
+) {
     LaunchedEffect(Unit) {
         mainViewModel.setTitle("Profile")
-        totalCourses = courseRepository.totalCourseCount(db)
-        enrolledCourses = courseRepository.userTotalEnrolledCourseCount(db, mAuth.currentUser!!.uid)
     }
     val context = LocalContext.current
+    mAuth = FirebaseAuth.getInstance()
     oneTapClient = Identity.getSignInClient(context)
     val sharedPrefs = context
         .getSharedPreferences("PREFERENCES", Context.MODE_PRIVATE)
     val dark = sharedPrefs.getBoolean("darkTheme", false)
     var checked by remember { mutableStateOf(dark) }
-    val showDialog = remember { mutableStateOf(false) }
+    val showLogoutDialog: Boolean by profileViewModel.isLogoutDialog.observeAsState(false)
+    val totalCourses: Int by profileViewModel.totalCourses.observeAsState(0)
+    val enrolledCourses: Int by profileViewModel.enrolledCourses.observeAsState(0)
+    profileViewModel.getTotalCourses()
+    profileViewModel.getEnrolledCourses()
+
     Card {
-        if (showDialog.value) {
-            LogoutConfirmation(showDialog = showDialog.value,
-                onDismiss = {showDialog.value = false},
-                mainNavController = mainNavController
+        if (showLogoutDialog) {
+            LogoutConfirmation(showDialog = showLogoutDialog,
+                onDismiss = { profileViewModel.removeLogoutConfirmation()},
+                mainNavController = mainNavController,
+                profileViewModel = profileViewModel
             )
         }
     }
@@ -98,7 +103,7 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                 Icon(imageVector = Icons.Default.ListAlt, contentDescription = "All Courses")
                 Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                 Text(
-                    text = "Total Courses Available : ${totalCourses}",
+                    text = "Total Courses Available : $totalCourses",
                     fontSize = 20.sp
                 )
             }
@@ -112,7 +117,7 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                         Icon(imageVector = Icons.Rounded.List, contentDescription = "My Courses")
                         Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                         Text(
-                            text = "Courses enrolled : ${enrolledCourses}",
+                            text = "Courses enrolled : $enrolledCourses",
                             fontSize = 20.sp
                         )
                     }
@@ -158,7 +163,7 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
                 .fillMaxWidth(0.9f)
                 .clickable(
                     onClick = {
-                        showDialog.value = true
+                        profileViewModel.showLogoutConfirmation()
                     })
             ) {
                 Icon(imageVector = Icons.Rounded.Logout, contentDescription = "Logout")
@@ -172,14 +177,19 @@ fun ProfileScreen(mainNavController: NavHostController, mainViewModel: MainViewM
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
-    val mainViewModel = MainViewModel()
-    ProfileScreen(rememberNavController(), mainViewModel = mainViewModel)
+    val db = FirebaseFirestore.getInstance()
+    val mAuth = FirebaseAuth.getInstance()
+    val courseRepository = CourseRepository()
+    val mainViewModel = MainViewModel(db, mAuth, courseRepository)
+    val profileViewModel = ProfileViewModel()
+    ProfileScreen(rememberNavController(), mainViewModel, profileViewModel)
 }
 @Composable
 fun LogoutConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
-    mainNavController: NavHostController
+    mainNavController: NavHostController,
+    profileViewModel: ProfileViewModel
 ) {
     if (showDialog) {
         AlertDialog(
@@ -195,7 +205,8 @@ fun LogoutConfirmation(
                     profileViewModel.signOut(
                         mAuth = mAuth,
                         oneTapClient = oneTapClient,
-                        mainNavController = mainNavController)} ) {
+                        mainNavController = mainNavController
+                    )} ) {
                     Text("OK")
                 }
             },

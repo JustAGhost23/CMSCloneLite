@@ -30,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 
@@ -43,26 +44,19 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
     val mStartYear = if(course.id == null)mCalendar.get(Calendar.YEAR) else course.startDateStartTime!!.year + 1900
     val mStartMonth = if(course.id == null)mCalendar.get(Calendar.MONTH) else course.startDateStartTime!!.month
     val mStartDay = if(course.id == null)mCalendar.get(Calendar.DAY_OF_MONTH) else course.startDateStartTime!!.date
-    val mEndYear = if(course.id == null)mCalendar.get(Calendar.YEAR) else course.endDateStartTime!!.year + 1900
-    val mEndMonth = if(course.id == null)mCalendar.get(Calendar.MONTH) else course.endDateStartTime!!.month
-    val mEndDay = if(course.id == null)mCalendar.get(Calendar.DAY_OF_MONTH) else course.endDateStartTime!!.date
+    val mEndYear = if(course.id == null)mCalendar.get(Calendar.YEAR) else course.endDateEndTime!!.year + 1900
+    val mEndMonth = if(course.id == null)mCalendar.get(Calendar.MONTH) else course.endDateEndTime!!.month
+    val mEndDay = if(course.id == null)mCalendar.get(Calendar.DAY_OF_MONTH) else course.endDateEndTime!!.date
     val mStartHour = if(course.id == null)mCalendar[Calendar.HOUR_OF_DAY] else course.startDateStartTime!!.hours
     val mStartMinute = if(course.id == null)mCalendar[Calendar.MINUTE] else course.startDateStartTime!!.minutes
-    val mEndHour = if(course.id == null)mCalendar[Calendar.HOUR_OF_DAY] else course.startDateEndTime!!.hours
-    val mEndMinute = if(course.id == null)mCalendar[Calendar.MINUTE] else course.startDateEndTime!!.minutes
+    val mEndHour = if(course.id == null)mCalendar[Calendar.HOUR_OF_DAY] else course.endDateEndTime!!.hours
+    val mEndMinute = if(course.id == null)mCalendar[Calendar.MINUTE] else course.endDateEndTime!!.minutes
     var courseName by rememberSaveable { mutableStateOf(if(course.id == null)"" else course.courseName)}
     var instructor by rememberSaveable { mutableStateOf(if(course.id == null)"" else course.instructor)}
     val showAddDialog = remember { mutableStateOf(false) }
     val mEndTimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
-            if(course.startDateStartTime == null) course.startDateStartTime = Date()
-            if(course.startDateEndTime == null) course.startDateEndTime = Date()
-            if(course.endDateStartTime == null) course.endDateStartTime = Date()
-            if(course.endDateEndTime == null) course.endDateEndTime = Date()
-            course.startDateEndTime!!.hours = mHour
-            course.startDateEndTime!!.minutes = mMinute
-            course.startDateEndTime!!.seconds = 0
             course.endDateEndTime!!.hours = mHour
             course.endDateEndTime!!.minutes = mMinute
             course.endDateEndTime!!.seconds = 0
@@ -71,29 +65,15 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
     val mStartTimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
-            if(course.startDateStartTime == null) course.startDateStartTime = Date()
-            if(course.startDateEndTime == null) course.startDateEndTime = Date()
-            if(course.endDateStartTime == null) course.endDateStartTime = Date()
-            if(course.endDateEndTime == null) course.endDateEndTime = Date()
             course.startDateStartTime!!.hours = mHour
             course.startDateStartTime!!.minutes = mMinute
             course.startDateStartTime!!.seconds = 0
-            course.endDateStartTime!!.hours = mHour
-            course.endDateStartTime!!.minutes = mMinute
-            course.endDateStartTime!!.seconds = 0
             mEndTimePickerDialog.show()
         }, mStartHour, mStartMinute, false
     )
     val mEndDatePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
-            if(course.startDateStartTime == null) course.startDateStartTime = Date()
-            if(course.startDateEndTime == null) course.startDateEndTime = Date()
-            if(course.endDateStartTime == null) course.endDateStartTime = Date()
-            if(course.endDateEndTime == null) course.endDateEndTime = Date()
-            course.endDateStartTime!!.year = mYear - 1900
-            course.endDateStartTime!!.month = mMonth
-            course.endDateStartTime!!.date = mDayOfMonth
             course.endDateEndTime!!.year = mYear - 1900
             course.endDateEndTime!!.month = mMonth
             course.endDateEndTime!!.date = mDayOfMonth
@@ -104,15 +84,10 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
         context,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
             if(course.startDateStartTime == null) course.startDateStartTime = Date()
-            if(course.startDateEndTime == null) course.startDateEndTime = Date()
-            if(course.endDateStartTime == null) course.endDateStartTime = Date()
             if(course.endDateEndTime == null) course.endDateEndTime = Date()
             course.startDateStartTime!!.year = mYear - 1900
             course.startDateStartTime!!.month = mMonth
             course.startDateStartTime!!.date = mDayOfMonth
-            course.startDateEndTime!!.year = mYear - 1900
-            course.startDateEndTime!!.month = mMonth
-            course.startDateEndTime!!.date = mDayOfMonth
             mEndDatePickerDialog.show()
         }, mStartYear, mStartMonth, mStartDay
     )
@@ -300,7 +275,7 @@ fun CourseAddConfirmation(
             confirmButton = {
                 TextButton(onClick = {
                     if(course.id == null) {
-                        if(course.startDateStartTime != null && course.startDateEndTime != null && course.endDateStartTime != null && course.endDateEndTime != null && course.days != "") {
+                        if((course.courseName != "" || course.courseName != null) && (course.instructor != "" || course.instructor != null) && course.startDateStartTime != null && course.endDateEndTime != null && (course.days != "" || course.days != null) && Timestamp(course.endDateEndTime!!) > Timestamp(course.startDateStartTime!!)) {
                             courseRepository.addCourse(db, course)
                             navController.navigate(Screen.MainScreen.route) {
                                 popUpTo(Screen.MainScreen.route) {
@@ -308,13 +283,29 @@ fun CourseAddConfirmation(
                                 }
                             }
                         }
-                        else {
-                            Toast.makeText(context.findActivity(), "Please enter all details",
-                                Toast.LENGTH_SHORT).show()
+                        else if(course.courseName == null || course.courseName == "") {
+                            Toast.makeText(context.findActivity(), "Please enter the name of the course",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(course.instructor == null || course.instructor == "") {
+                            Toast.makeText(context.findActivity(), "Please enter the name of the instructor",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(course.days == null || course.days == "") {
+                            Toast.makeText(context.findActivity(), "Please choose the days on which the classes are to be held",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(course.startDateStartTime == null || course.endDateEndTime == null) {
+                            Toast.makeText(context.findActivity(), "Please enter the course timings",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(Timestamp(course.endDateEndTime!!) <= Timestamp(course.startDateStartTime!!)) {
+                            Toast.makeText(context.findActivity(), "Selected Course Timings are invalid",
+                                Toast.LENGTH_LONG).show()
                         }
                     }
                     else {
-                        if(course.startDateStartTime != null && course.startDateEndTime != null && course.endDateStartTime != null && course.endDateEndTime != null && course.days != "") {
+                        if(course.courseName != "" && course.instructor != "" && course.startDateStartTime != null && course.endDateEndTime != null && course.days != "") {
                             courseRepository.editCourse(db, course.id!!, course)
                             navController.navigate(Screen.MainScreen.route) {
                                 popUpTo(Screen.MainScreen.route) {
@@ -322,9 +313,25 @@ fun CourseAddConfirmation(
                                 }
                             }
                         }
-                        else {
-                            Toast.makeText(context.findActivity(), "Please enter all details",
-                                Toast.LENGTH_SHORT).show()
+                        else if(course.courseName == null || course.courseName == "") {
+                            Toast.makeText(context.findActivity(), "Please enter the name of the course",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(course.instructor == null || course.instructor == "") {
+                            Toast.makeText(context.findActivity(), "Please enter the name of the instructor",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(course.days == null || course.days == "") {
+                            Toast.makeText(context.findActivity(), "Please choose the days on which the classes are to be held",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(course.startDateStartTime == null || course.endDateEndTime == null) {
+                            Toast.makeText(context.findActivity(), "Please enter the course timings",
+                                Toast.LENGTH_LONG).show()
+                        }
+                        else if(Timestamp(course.endDateEndTime!!) <= Timestamp(course.startDateStartTime!!)) {
+                            Toast.makeText(context.findActivity(), "Selected Course Timings are invalid",
+                                Toast.LENGTH_LONG).show()
                         }
                     }
                 }) {
