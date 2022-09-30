@@ -49,6 +49,7 @@ fun EditCourseDetailsScreen(
     editCourseDetailsViewModel.initialize(course)
     val mEndTimePickerDialog = TimePickerDialog(
         context,
+        android.R.style.Theme_DeviceDefault_Dialog,
         {_, mHour : Int, mMinute: Int ->
             endDateEndTime.hours = mHour
             endDateEndTime.minutes = mMinute
@@ -58,31 +59,37 @@ fun EditCourseDetailsScreen(
     )
     val mStartTimePickerDialog = TimePickerDialog(
         context,
+        android.R.style.Theme_DeviceDefault_Dialog,
         {_, mHour : Int, mMinute: Int ->
             startDateStartTime.hours = mHour
             startDateStartTime.minutes = mMinute
             startDateStartTime.seconds = 0
             editCourseDetailsViewModel.addStartDateStartTime(startDateStartTime, course)
+            mEndTimePickerDialog.setMessage("Set Class End Time")
             mEndTimePickerDialog.show()
         }, startDateStartTime.hours, startDateStartTime.minutes, false
     )
     val mEndDatePickerDialog = DatePickerDialog(
         context,
+        android.R.style.Theme_DeviceDefault_Dialog,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
             endDateEndTime.year = mYear - 1900
             endDateEndTime.month = mMonth
             endDateEndTime.date = mDayOfMonth
             editCourseDetailsViewModel.addEndDateEndTime(endDateEndTime, course)
+            mStartTimePickerDialog.setMessage("Set Class Start Time")
             mStartTimePickerDialog.show()
         }, endDateEndTime.year + 1900, endDateEndTime.month, endDateEndTime.date
     )
     val mStartDatePickerDialog = DatePickerDialog(
         context,
+        android.R.style.Theme_DeviceDefault_Dialog,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
             startDateStartTime.year = mYear - 1900
             startDateStartTime.month = mMonth
             startDateStartTime.date = mDayOfMonth
             editCourseDetailsViewModel.addStartDateStartTime(startDateStartTime, course)
+            mEndDatePickerDialog.setMessage("Set Class End Date")
             mEndDatePickerDialog.show()
         }, startDateStartTime.year + 1900, startDateStartTime.month, startDateStartTime.date
     )
@@ -198,6 +205,7 @@ fun EditCourseDetailsScreen(
                 ) {
                     Button(
                         onClick = {
+                            mStartDatePickerDialog.setMessage("Set Class Start Date")
                             mStartDatePickerDialog.show()
                         }
                     ) {
