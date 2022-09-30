@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -101,14 +102,26 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.padding(top = 300.dp))
+            Spacer(modifier = Modifier.padding(top = 180.dp))
             Text(
                 "BPHC CMS Clone Lite",
                 textAlign = TextAlign.Center,
-                fontSize = 30.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.padding(top = 150.dp))
+            Spacer(modifier = Modifier.padding(top = 50.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painterResource(id = R.drawable.bitslogo),
+                    contentDescription = "Bits Logo",
+                    modifier = Modifier.fillMaxWidth(0.7f)
+                        .fillMaxHeight(0.4f),
+                )
+            }
+            Spacer(Modifier.padding(vertical = 30.dp))
             Button(
                 onClick = {
                     oneTapClient.beginSignIn(signInRequest)
@@ -164,7 +177,7 @@ fun LoginScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.padding(top = 10.dp))
+            Spacer(modifier = Modifier.padding(top = 12.dp))
             Button(
                 onClick = {
                     navController.navigate(route = Screen.AdminLogin.route)

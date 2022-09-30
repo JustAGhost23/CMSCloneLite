@@ -102,22 +102,27 @@ class EditCourseDetailsViewModel(
                 }
             }
             else if(course.courseName == null || course.courseName == "") {
+                _isAddCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please enter the name of the course",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.instructor == null || course.instructor == "") {
+                _isAddCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please enter the name of the instructor",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.days == null || course.days == "") {
+                _isAddCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please choose the days on which the classes are to be held",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.startDateStartTime == null || course.endDateEndTime == null) {
+                _isAddCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please enter the course timings",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.endDateEndTime!! <= course.startDateStartTime!!) {
+                _isAddCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Selected Course Timings are invalid",
                     Toast.LENGTH_SHORT).show()
             }
@@ -132,18 +137,22 @@ class EditCourseDetailsViewModel(
                 }
             }
             else if(course.courseName == null || course.courseName == "") {
+                _isEditCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please enter the name of the course",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.instructor == null || course.instructor == "") {
+                _isEditCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please enter the name of the instructor",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.days == null || course.days == "") {
+                _isEditCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Please choose the days on which the classes are to be held",
                     Toast.LENGTH_SHORT).show()
             }
             else if(course.endDateEndTime!! <= course.startDateStartTime!!) {
+                _isEditCourseDialog.value = false
                 Toast.makeText(context.findActivity(), "Selected Course Timings are invalid",
                     Toast.LENGTH_SHORT).show()
             }
