@@ -56,10 +56,12 @@ fun ProfileScreen(
     val enrolledCourses: Int by profileViewModel.enrolledCourses.observeAsState(0)
     profileViewModel.getTotalCourses()
     profileViewModel.getEnrolledCourses()
+    profileViewModel.initialize()
 
     Card {
         if (showLogoutDialog) {
-            LogoutConfirmation(showDialog = showLogoutDialog,
+            LogoutConfirmation(
+                showDialog = showLogoutDialog,
                 onDismiss = { profileViewModel.removeLogoutConfirmation()},
                 mainNavController = mainNavController,
                 profileViewModel = profileViewModel

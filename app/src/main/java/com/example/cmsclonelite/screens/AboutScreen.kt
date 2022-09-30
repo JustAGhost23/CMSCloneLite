@@ -18,7 +18,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.R
 
 @Composable
-fun AboutScreen(navController: NavHostController) {
+fun AboutScreen(
+    navController: NavHostController
+) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background

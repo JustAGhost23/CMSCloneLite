@@ -52,6 +52,7 @@ fun LoginScreen(
     signInRequest = loginViewModel.signInRequest
     signUpRequest = loginViewModel.signUpRequest
     val showNoGoogleAlertDialog: Boolean by loginViewModel.isNoGoogleAccountDialog.observeAsState(false)
+    loginViewModel.initializeLogin()
     val loginResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         if(result.resultCode == Activity.RESULT_OK) {
             val data: Intent? = result.data

@@ -1,14 +1,19 @@
 package com.example.cmsclonelite.repository
 
+import android.content.ContentValues
 import android.content.ContentValues.TAG
+import android.content.Context
+import android.provider.CalendarContract
 import android.util.Log
 import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
 import com.google.auth.oauth2.AccessToken
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 import okhttp3.*
@@ -17,6 +22,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okio.IOException
 import org.json.JSONObject
 import java.io.InputStream
+import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -29,14 +35,17 @@ class CourseRepository {
         val snapshot = coursesRef.get().await()
         return snapshot.documents
     }
+
     private suspend fun getUser(db: FirebaseFirestore, uid: String): DocumentSnapshot {
         val usersRef = db.collection("users").document(uid)
         return usersRef.get().await()
     }
+
     private suspend fun getCourse(db: FirebaseFirestore, courseId: String): DocumentSnapshot {
         val coursesRef = db.collection("courses").document(courseId)
         return coursesRef.get().await()
     }
+
     private suspend fun getUserEnrolledCourses(db: FirebaseFirestore, uid: String): List<DocumentSnapshot> {
         val snapshotList = arrayListOf<DocumentSnapshot>()
         val stringList = userEnrolledCourseList(db, uid)
@@ -48,6 +57,7 @@ class CourseRepository {
         }
         return snapshotList
     }
+
     suspend fun getData(db: FirebaseFirestore): List<Course> {
         val docList = getCourses(db)
         val list = ArrayList<Course>()
@@ -66,6 +76,7 @@ class CourseRepository {
         }
         return list
     }
+
     suspend fun getAnnouncements(db: FirebaseFirestore, courseId: String?): List<Announcement> {
         val list = ArrayList<Announcement>()
         if(courseId != null) {
@@ -81,6 +92,7 @@ class CourseRepository {
         }
         return list
     }
+
     suspend fun unenrollAll(db: FirebaseFirestore, uid: String) {
         withContext(Dispatchers.IO) {
                 db.collection("users").document(uid)
@@ -93,19 +105,23 @@ class CourseRepository {
                     }
         }
     }
+
     suspend fun totalCourseCount(db: FirebaseFirestore): Int {
         val docList = getCourses(db)
         return docList.size
     }
+
     suspend fun userTotalEnrolledCourseCount(db: FirebaseFirestore, uid: String): Int {
         val doc = getUser(db, uid)
         val enrolledCourseList: List<String>? = doc.get("enrolled") as List<String>?
         return enrolledCourseList?.size ?: 0
     }
+
     suspend fun userEnrolledCourseList(db: FirebaseFirestore, uid: String): List<String>? {
         val doc = getUser(db, uid)
         return doc.get("enrolled") as List<String>?
     }
+
     suspend fun getUserEnrolledCoursesData(db: FirebaseFirestore, uid: String): List<Course> {
         val docList = getUserEnrolledCourses(db, uid)
         val courseList = ArrayList<Course>()
@@ -124,6 +140,142 @@ class CourseRepository {
         }
         return courseList
     }
+
+    fun calendarExport(context: Context, email: String, course: Course) {
+        ioCoroutineScope.launch {
+            val calID: Long? = getCalendarId(context, email)
+            val startMillis: Long = Calendar.getInstance().run {
+                set(
+                    course.startDateStartTime!!.year + 1900,
+                    course.startDateStartTime!!.month,
+                    course.startDateStartTime!!.date,
+                    course.startDateStartTime!!.hours,
+                    course.startDateStartTime!!.minutes
+                )
+                timeInMillis
+            }
+            val values = ContentValues().apply {
+                put(CalendarContract.Events.DTSTART, startMillis)
+                put(CalendarContract.Events.TITLE, course.courseName)
+                put(CalendarContract.Events.CALENDAR_ID, calID)
+                put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+                put(
+                    CalendarContract.Events.DURATION,
+                    "PT${course.endDateEndTime!!.hours - course.startDateStartTime!!.hours}H${course.endDateEndTime!!.minutes - course.startDateStartTime!!.minutes}M"
+                )
+                put(
+                    CalendarContract.Events.RRULE,
+                    "FREQ=WEEKLY;UNTIL=${course.endDateEndTime!!.year + 1900}${
+                        (course.endDateEndTime!!.month + 1).toString()
+                            .padStart(2, '0')
+                    }${
+                        course.endDateEndTime!!.date.toString().padStart(2, '0')
+                    }T${
+                        course.endDateEndTime!!.hours.toString().padStart(2, '0')
+                    }${
+                        course.endDateEndTime!!.minutes.toString().padStart(2, '0')
+                    }${
+                        course.endDateEndTime!!.seconds.toString().padStart(2, '0')
+                    }Z;BYDAY=${
+                        course.days.toString().substring(0, (course.days.toString().length - 1))
+                    }"
+                );
+            }
+            context.contentResolver.insert(
+                CalendarContract.Events.CONTENT_URI,
+                values
+            )!!
+        }
+    }
+
+    private fun getCalendarId(context: Context, email: String) : Long? {
+        val projection = arrayOf(CalendarContract.Calendars._ID, CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
+
+        var calCursor = context.contentResolver.query(
+            CalendarContract.Calendars.CONTENT_URI,
+            projection,
+            CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.ACCOUNT_NAME + " = '$email'",
+            null,
+            CalendarContract.Calendars._ID + " ASC"
+        )
+
+        if (calCursor != null && calCursor.count <= 0) {
+            calCursor = context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                projection,
+                CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.ACCOUNT_NAME + " = '$email'",
+                null,
+                CalendarContract.Calendars._ID + " ASC"
+            )
+        }
+
+        if (calCursor != null) {
+            if (calCursor.moveToFirst()) {
+                val calName: String
+                val calID: String
+                val nameCol = calCursor.getColumnIndex(projection[1])
+                val idCol = calCursor.getColumnIndex(projection[0])
+
+                calName = calCursor.getString(nameCol)
+                calID = calCursor.getString(idCol)
+
+                Log.d(ContentValues.TAG, "Calendar name = $calName Calendar ID = $calID")
+
+                calCursor.close()
+                return calID.toLong()
+            }
+        }
+        return null
+    }
+
+    fun enrollInCourse(db: FirebaseFirestore, uid: String, course: Course) {
+        ioCoroutineScope.launch {
+            FirebaseMessaging.getInstance().subscribeToTopic(course.id!!)
+            db.collection("users").document(uid)
+                .update("enrolled", FieldValue.arrayUnion(course.id))
+                .addOnSuccessListener { Log.d(ContentValues.TAG, "DocumentSnapshot successfully updated!") }
+                .addOnFailureListener { e: Exception? -> Log.w(ContentValues.TAG, "Error updating document", e) }
+        }
+    }
+
+    fun unenrollFromCourse(db: FirebaseFirestore, uid:String, course: Course) {
+        ioCoroutineScope.launch {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic(course.id!!)
+            db.collection("users").document(uid)
+                .update("enrolled", FieldValue.arrayRemove("${course.id}"))
+                .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
+                .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error updating document", e) }
+        }
+    }
+
+    fun deleteCourse(db: FirebaseFirestore, course: Course) {
+        ioCoroutineScope.launch {
+            db.collection("users").whereArrayContains("enrolled", course.id!!)
+                .get()
+                .addOnCompleteListener { task ->
+                    if(task.isSuccessful) {
+                        val documents = task.result
+                        for(document in documents) {
+                            val user = document.id
+                            val username = document.get("name")
+                            val courseList: MutableList<String> = document.get("enrolled") as MutableList<String>
+                            courseList.remove(course.id)
+                            val userInfo = hashMapOf(
+                                "name" to username,
+                                "enrolled" to courseList
+                            )
+                            db.collection("users").document(user)
+                                .set(userInfo)
+                        }
+                    }
+                }
+            db.collection("courses").document("${course.id}")
+                .delete()
+                .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully deleted!") }
+                .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error deleting document", e) }
+        }
+    }
+
     fun addCourse(db: FirebaseFirestore, course: Course) {
         ioCoroutineScope.launch {
             val data = hashMapOf(
@@ -144,6 +296,7 @@ class CourseRepository {
                 }
         }
     }
+
     fun editCourse(db: FirebaseFirestore, courseId: String, course: Course) {
         ioCoroutineScope.launch {
             val data = hashMapOf(
@@ -158,6 +311,7 @@ class CourseRepository {
                 .set(data, SetOptions.merge())
         }
     }
+
     fun addAnnouncement(db: FirebaseFirestore, courseId: String, announcement: Announcement) {
         ioCoroutineScope.launch {
             val announcementList = getAnnouncements(db, courseId)
@@ -180,6 +334,7 @@ class CourseRepository {
                 .update("announcements", announcementHashMap)
         }
     }
+
     fun sendPushNotification(course: Course, announcement: Announcement) {
         ioCoroutineScope.launch {
             val url = "https://fcm.googleapis.com/v1/projects/cmsclonelite/messages:send"
@@ -218,6 +373,7 @@ class CourseRepository {
         )
         }
     }
+
     @Throws(IOException::class)
     private fun getAccessToken(): Deferred<AccessToken> = ioCoroutineScope.async {
         val myString: String = """

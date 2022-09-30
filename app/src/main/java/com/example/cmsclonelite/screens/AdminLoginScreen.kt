@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.viewmodels.LoginViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -42,7 +41,7 @@ fun AdminLoginScreen(
     val username by loginViewModel.username.observeAsState("")
     val password by loginViewModel.password.observeAsState("")
     val passwordVisible by loginViewModel.passwordVisible.observeAsState(true)
-    loginViewModel.initialize()
+    loginViewModel.initializeAdminLogin()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colors.background

@@ -81,9 +81,8 @@ fun AnnouncementsScreen(
 @Preview
 fun AnnouncementsScreenPreview() {
     val db = FirebaseFirestore.getInstance()
-    val mAuth = FirebaseAuth.getInstance()
     val courseRepository = CourseRepository()
-    val announcementsViewModel = AnnouncementsViewModel(db, mAuth, courseRepository)
+    val announcementsViewModel = AnnouncementsViewModel(db, courseRepository)
     AnnouncementsScreen(rememberNavController(), Course(), announcementsViewModel)
 }
 @Composable

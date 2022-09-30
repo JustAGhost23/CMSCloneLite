@@ -7,10 +7,7 @@ import androidx.navigation.compose.composable
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.screens.*
-import com.example.cmsclonelite.viewmodels.AnnouncementsViewModel
-import com.example.cmsclonelite.viewmodels.LoginViewModel
-import com.example.cmsclonelite.viewmodels.MainViewModel
-import com.example.cmsclonelite.viewmodels.ProfileViewModel
+import com.example.cmsclonelite.viewmodels.*
 
 @Composable
 fun SetupNavGraph(
@@ -18,7 +15,9 @@ fun SetupNavGraph(
     loginViewModel: LoginViewModel,
     mainViewModel: MainViewModel,
     profileViewModel: ProfileViewModel,
-    announcementsViewModel: AnnouncementsViewModel
+    announcementsViewModel: AnnouncementsViewModel,
+    courseDetailsViewModel: CourseDetailsViewModel,
+    editCourseDetailsViewModel: EditCourseDetailsViewModel
 ) {
     NavHost(
         navController = navController,
@@ -39,19 +38,19 @@ fun SetupNavGraph(
         composable(route = Screen.CourseDetails.route) {
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("course")
             if (course != null) {
-                CourseDetailsScreen(navController = navController, course = course)
+                CourseDetailsScreen(navController = navController, course = course, courseDetailsViewModel = courseDetailsViewModel)
             }
         }
         composable(route = Screen.EnrolledCourseDetails.route) {
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("course")
             if (course != null) {
-                EnrolledCourseDetailsScreen(navController = navController, course = course)
+                EnrolledCourseDetailsScreen(navController = navController, course = course, courseDetailsViewModel = courseDetailsViewModel)
             }
         }
         composable(route = Screen.EditCourseDetails.route) {
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("courseEdit")
             if (course != null) {
-                EditCourseDetailsScreen(navController = navController, course = course)
+                EditCourseDetailsScreen(navController = navController, course = course, editCourseDetailsViewModel = editCourseDetailsViewModel)
             }
         }
         composable(route = Screen.Announcements.route) {

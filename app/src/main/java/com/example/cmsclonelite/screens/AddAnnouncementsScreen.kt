@@ -30,7 +30,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun AddAnnouncementsScreen(navController: NavHostController, course: Course, announcementsViewModel: AnnouncementsViewModel) {
+fun AddAnnouncementsScreen(
+    navController: NavHostController,
+    course: Course,
+    announcementsViewModel: AnnouncementsViewModel
+) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     mAuth = FirebaseAuth.getInstance()
@@ -121,9 +125,8 @@ fun AddAnnouncementsScreen(navController: NavHostController, course: Course, ann
 @Composable
 fun AddAnnouncementsScreenPreview() {
     val db = FirebaseFirestore.getInstance()
-    val mAuth = FirebaseAuth.getInstance()
     val courseRepository = CourseRepository()
-    val announcementsViewModel = AnnouncementsViewModel(db, mAuth, courseRepository)
+    val announcementsViewModel = AnnouncementsViewModel(db, courseRepository)
     AddAnnouncementsScreen(rememberNavController(), Course(), announcementsViewModel)
 }
 @Composable

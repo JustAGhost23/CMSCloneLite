@@ -25,12 +25,17 @@ import com.google.firebase.auth.FirebaseAuth
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun MainScreen(mainNavController: NavHostController, mainViewModel: MainViewModel, profileViewModel: ProfileViewModel) {
+fun MainScreen(
+    mainNavController: NavHostController,
+    mainViewModel: MainViewModel,
+    profileViewModel: ProfileViewModel
+) {
     mAuth = FirebaseAuth.getInstance()
     val title: String by mainViewModel.screenTitle.observeAsState("")
     val showUnenrollAllDialog: Boolean by mainViewModel.isUnenrollAllDialog.observeAsState(false)
     val userEnrolledCourseList: List<String> by mainViewModel.enrolledCourseIdList.observeAsState(listOf())
     mainViewModel.getCourseEnrollIdList()
+    mainViewModel.initialize()
     val bottomNavController = rememberNavController()
     Card {
         if (showUnenrollAllDialog) {
@@ -149,8 +154,7 @@ fun CourseUnenrollAllConfirmation(
             confirmButton = {
                 TextButton(onClick =  {
                     mainViewModel.unenrollAll(navController, userEnrolledCourseList)
-                }
-                ) {
+                }) {
                     Text("OK")
                 }
             },

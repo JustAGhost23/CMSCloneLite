@@ -24,7 +24,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun AllCoursesScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
+fun AllCoursesScreen(
+    mainNavController: NavHostController,
+    mainViewModel: MainViewModel
+) {
     LaunchedEffect(Unit) {
         mainViewModel.setTitle("All Courses")
     }
@@ -87,7 +90,7 @@ fun AllCoursesCustomCard(course: Course, navController: NavHostController, userE
                     )
                 }
             ),
-        elevation = 24.dp
+        elevation = 12.dp
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()

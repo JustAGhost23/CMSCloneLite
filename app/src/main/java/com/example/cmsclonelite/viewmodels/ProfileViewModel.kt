@@ -30,7 +30,7 @@ class ProfileViewModel: ViewModel() {
     val isDarkTheme: LiveData<Boolean>
         get() = _isDarkTheme
 
-    init {
+    fun initialize() {
         _isLogoutDialog.value = false
     }
 

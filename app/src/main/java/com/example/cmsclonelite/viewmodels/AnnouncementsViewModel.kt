@@ -9,13 +9,11 @@ import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
 import com.example.cmsclonelite.screens.findActivity
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class AnnouncementsViewModel(
     private val db: FirebaseFirestore,
-    private val mAuth: FirebaseAuth,
     private val courseRepository: CourseRepository
 ): ViewModel() {
     private var _allAnnouncementsList = MutableLiveData<List<Announcement>>()
@@ -100,13 +98,12 @@ class AnnouncementsViewModel(
 
 class AnnouncementsViewModelFactory(
     private val db: FirebaseFirestore,
-    private val mAuth: FirebaseAuth,
     private val courseRepository: CourseRepository
 ) : ViewModelProvider.Factory {
     @Suppress("unchecked_cast")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AnnouncementsViewModel::class.java)) {
-            return AnnouncementsViewModel(db, mAuth, courseRepository) as T
+            return AnnouncementsViewModel(db, courseRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

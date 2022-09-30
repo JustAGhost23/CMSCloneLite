@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.widget.DatePicker
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,7 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -28,78 +27,84 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
-import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
-import com.google.firebase.Timestamp
+import com.example.cmsclonelite.viewmodels.EditCourseDetailsViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 
 @Composable
-fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
+fun EditCourseDetailsScreen(
+    navController: NavHostController,
+    course: Course,
+    editCourseDetailsViewModel: EditCourseDetailsViewModel
+) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
-    val db = FirebaseFirestore.getInstance()
-    val courseRepository = CourseRepository()
-    val mCalendar = Calendar.getInstance()
-    val mStartYear = if(course.id == null)mCalendar.get(Calendar.YEAR) else course.startDateStartTime!!.year + 1900
-    val mStartMonth = if(course.id == null)mCalendar.get(Calendar.MONTH) else course.startDateStartTime!!.month
-    val mStartDay = if(course.id == null)mCalendar.get(Calendar.DAY_OF_MONTH) else course.startDateStartTime!!.date
-    val mEndYear = if(course.id == null)mCalendar.get(Calendar.YEAR) else course.endDateEndTime!!.year + 1900
-    val mEndMonth = if(course.id == null)mCalendar.get(Calendar.MONTH) else course.endDateEndTime!!.month
-    val mEndDay = if(course.id == null)mCalendar.get(Calendar.DAY_OF_MONTH) else course.endDateEndTime!!.date
-    val mStartHour = if(course.id == null)mCalendar[Calendar.HOUR_OF_DAY] else course.startDateStartTime!!.hours
-    val mStartMinute = if(course.id == null)mCalendar[Calendar.MINUTE] else course.startDateStartTime!!.minutes
-    val mEndHour = if(course.id == null)mCalendar[Calendar.HOUR_OF_DAY] else course.endDateEndTime!!.hours
-    val mEndMinute = if(course.id == null)mCalendar[Calendar.MINUTE] else course.endDateEndTime!!.minutes
-    var courseName by rememberSaveable { mutableStateOf(if(course.id == null)"" else course.courseName)}
-    var instructor by rememberSaveable { mutableStateOf(if(course.id == null)"" else course.instructor)}
-    val showAddDialog = remember { mutableStateOf(false) }
+    val courseName: String by editCourseDetailsViewModel.courseName.observeAsState("")
+    val instructor: String by editCourseDetailsViewModel.instructor.observeAsState("")
+    val showAddDialog: Boolean by editCourseDetailsViewModel.isAddCourseDialog.observeAsState(false)
+    val showEditDialog: Boolean by editCourseDetailsViewModel.isEditCourseDialog.observeAsState(false)
+    val startDateStartTime: Date by editCourseDetailsViewModel.startDateStartTime.observeAsState(Date())
+    val endDateEndTime: Date by editCourseDetailsViewModel.endDateEndTime.observeAsState(Date())
+    editCourseDetailsViewModel.initialize(course)
     val mEndTimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
-            course.endDateEndTime!!.hours = mHour
-            course.endDateEndTime!!.minutes = mMinute
-            course.endDateEndTime!!.seconds = 0
-        }, mEndHour, mEndMinute, false
+            endDateEndTime.hours = mHour
+            endDateEndTime.minutes = mMinute
+            endDateEndTime.seconds = 0
+            editCourseDetailsViewModel.addEndDateEndTime(endDateEndTime, course)
+        }, endDateEndTime.hours, endDateEndTime.minutes, false
     )
     val mStartTimePickerDialog = TimePickerDialog(
         context,
         {_, mHour : Int, mMinute: Int ->
-            course.startDateStartTime!!.hours = mHour
-            course.startDateStartTime!!.minutes = mMinute
-            course.startDateStartTime!!.seconds = 0
+            startDateStartTime.hours = mHour
+            startDateStartTime.minutes = mMinute
+            startDateStartTime.seconds = 0
+            editCourseDetailsViewModel.addStartDateStartTime(startDateStartTime, course)
             mEndTimePickerDialog.show()
-        }, mStartHour, mStartMinute, false
+        }, startDateStartTime.hours, startDateStartTime.minutes, false
     )
     val mEndDatePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
-            course.endDateEndTime!!.year = mYear - 1900
-            course.endDateEndTime!!.month = mMonth
-            course.endDateEndTime!!.date = mDayOfMonth
+            endDateEndTime.year = mYear - 1900
+            endDateEndTime.month = mMonth
+            endDateEndTime.date = mDayOfMonth
+            editCourseDetailsViewModel.addEndDateEndTime(endDateEndTime, course)
             mStartTimePickerDialog.show()
-        }, mEndYear, mEndMonth, mEndDay
+        }, endDateEndTime.year + 1900, endDateEndTime.month, endDateEndTime.date
     )
     val mStartDatePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
-            if(course.startDateStartTime == null) course.startDateStartTime = Date()
-            if(course.endDateEndTime == null) course.endDateEndTime = Date()
-            course.startDateStartTime!!.year = mYear - 1900
-            course.startDateStartTime!!.month = mMonth
-            course.startDateStartTime!!.date = mDayOfMonth
+            startDateStartTime.year = mYear - 1900
+            startDateStartTime.month = mMonth
+            startDateStartTime.date = mDayOfMonth
+            editCourseDetailsViewModel.addStartDateStartTime(startDateStartTime, course)
             mEndDatePickerDialog.show()
-        }, mStartYear, mStartMonth, mStartDay
+        }, startDateStartTime.year + 1900, startDateStartTime.month, startDateStartTime.date
     )
     Card {
-        if (showAddDialog.value) {
-            CourseAddConfirmation(showDialog = showAddDialog.value,
-                onDismiss = {showAddDialog.value = false},
+        if (showAddDialog) {
+            CourseAddConfirmation(
+                showDialog = showAddDialog,
+                onDismiss = {editCourseDetailsViewModel.removeAddCourseDialog()},
                 navController = navController,
-                db = db,
                 course = course,
                 context = context,
-                courseRepository = courseRepository
+                editCourseDetailsViewModel = editCourseDetailsViewModel
+            )
+        }
+        if (showEditDialog) {
+            CourseEditConfirmation(
+                showDialog = showEditDialog,
+                onDismiss = {editCourseDetailsViewModel.removeEditCourseDialog()},
+                navController = navController,
+                course = course,
+                context = context,
+                editCourseDetailsViewModel = editCourseDetailsViewModel
             )
         }
     }
@@ -120,10 +125,15 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
                     }
                 )
             },
-            floatingActionButtonPosition = FabPosition.End,
+            floatingActionButtonPosition = FabPosition.Center,
             floatingActionButton = {
                 FloatingActionButton(onClick = {
-                    showAddDialog.value = true
+                    if(course.id == null) {
+                        editCourseDetailsViewModel.showAddCourseDialog()
+                    }
+                    else {
+                        editCourseDetailsViewModel.showEditCourseDialog()
+                    }
                 }) {
                     if(course.id == null) {
                         Icon(
@@ -148,7 +158,7 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
                 Spacer(modifier = Modifier.padding(top = 50.dp))
                 TextField(
                     modifier = Modifier.fillMaxWidth(0.9f),
-                    value = courseName!!,
+                    value = courseName,
                     colors = TextFieldDefaults.textFieldColors(),
                     label = { Text("Course Name") },
                     placeholder = { Text("Enter Course Name") },
@@ -160,13 +170,12 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
                         focusManager.moveFocus(FocusDirection.Down)
                     }),
                     onValueChange = {
-                        courseName = it
-                        course.courseName = courseName
+                        editCourseDetailsViewModel.setCourseName(course, it)
                     })
                 Spacer(modifier = Modifier.padding(top = 20.dp))
                 TextField(
                     modifier = Modifier.fillMaxWidth(0.9f),
-                    value = instructor!!,
+                    value = instructor,
                     colors = TextFieldDefaults.textFieldColors(),
                     label = { Text("Instructor") },
                     placeholder = { Text("Enter Instructor Name") },
@@ -178,8 +187,7 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
                         focusManager.clearFocus()
                     }),
                     onValueChange = {
-                        instructor = it
-                        course.instructor = instructor
+                        editCourseDetailsViewModel.setInstructor(course, it)
                     })
                 Spacer(modifier = Modifier.padding(top = 20.dp))
                 GroupedCheckbox(mItemsList = listOf("MO", "TU", "WE", "TH", "FR", "SA"), course)
@@ -193,7 +201,7 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
                             mStartDatePickerDialog.show()
                         }
                     ) {
-                        Text(text = if(course.id == null)"Enter Course Timings" else "Edit Course Timings",
+                        Text("Edit Course Timings",
                             fontSize = 16.sp)
                     }
                 }
@@ -204,18 +212,21 @@ fun EditCourseDetailsScreen(navController: NavHostController, course: Course) {
 @Preview(showBackground = true)
 @Composable
 fun EditCourseDetailsScreenPreview() {
-    EditCourseDetailsScreen(rememberNavController(), Course())
+    val db = FirebaseFirestore.getInstance()
+    val courseRepository = CourseRepository()
+    val editCourseDetailsViewModel = EditCourseDetailsViewModel(db, courseRepository)
+    EditCourseDetailsScreen(rememberNavController(), Course(), editCourseDetailsViewModel)
 }
 @Composable
 fun GroupedCheckbox(mItemsList: List<String>, course: Course) {
     var stringList = arrayListOf<String>()
     var length = if(course.days == null) 0 else course.days?.length!!
+    val list = arrayListOf<String>()
     while(length >= 3 && course.days != null) {
         val startIndex = length-3
         stringList.add(course.days!!.substring(startIndex, length-1))
         length-=3
     }
-    val list = arrayListOf<String>()
     Row(
         modifier = Modifier.fillMaxWidth(0.9f),
         horizontalArrangement = Arrangement.SpaceEvenly
@@ -258,82 +269,55 @@ fun CourseAddConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     navController: NavHostController,
-    db: FirebaseFirestore,
     course: Course,
     context: Context,
-    courseRepository: CourseRepository
+    editCourseDetailsViewModel: EditCourseDetailsViewModel
 ) {
     if (showDialog) {
         AlertDialog(
             title = {
-                Text(if(course.id == null)"Add Course" else "Edit Course")
+                Text("Add Course")
             },
             text = {
-                Text(if(course.id == null)"Are you sure you want to add this course?" else "Are you sure you want to edit this course?")
+                Text("Are you sure you want to add this course?")
             },
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    if(course.id == null) {
-                        if((course.courseName != "" || course.courseName != null) && (course.instructor != "" || course.instructor != null) && course.startDateStartTime != null && course.endDateEndTime != null && (course.days != "" || course.days != null) && Timestamp(course.endDateEndTime!!) > Timestamp(course.startDateStartTime!!)) {
-                            courseRepository.addCourse(db, course)
-                            navController.navigate(Screen.MainScreen.route) {
-                                popUpTo(Screen.MainScreen.route) {
-                                    inclusive = true
-                                }
-                            }
-                        }
-                        else if(course.courseName == null || course.courseName == "") {
-                            Toast.makeText(context.findActivity(), "Please enter the name of the course",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(course.instructor == null || course.instructor == "") {
-                            Toast.makeText(context.findActivity(), "Please enter the name of the instructor",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(course.days == null || course.days == "") {
-                            Toast.makeText(context.findActivity(), "Please choose the days on which the classes are to be held",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(course.startDateStartTime == null || course.endDateEndTime == null) {
-                            Toast.makeText(context.findActivity(), "Please enter the course timings",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(Timestamp(course.endDateEndTime!!) <= Timestamp(course.startDateStartTime!!)) {
-                            Toast.makeText(context.findActivity(), "Selected Course Timings are invalid",
-                                Toast.LENGTH_LONG).show()
-                        }
-                    }
-                    else {
-                        if(course.courseName != "" && course.instructor != "" && course.startDateStartTime != null && course.endDateEndTime != null && course.days != "") {
-                            courseRepository.editCourse(db, course.id!!, course)
-                            navController.navigate(Screen.MainScreen.route) {
-                                popUpTo(Screen.MainScreen.route) {
-                                    inclusive = true
-                                }
-                            }
-                        }
-                        else if(course.courseName == null || course.courseName == "") {
-                            Toast.makeText(context.findActivity(), "Please enter the name of the course",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(course.instructor == null || course.instructor == "") {
-                            Toast.makeText(context.findActivity(), "Please enter the name of the instructor",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(course.days == null || course.days == "") {
-                            Toast.makeText(context.findActivity(), "Please choose the days on which the classes are to be held",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(course.startDateStartTime == null || course.endDateEndTime == null) {
-                            Toast.makeText(context.findActivity(), "Please enter the course timings",
-                                Toast.LENGTH_LONG).show()
-                        }
-                        else if(Timestamp(course.endDateEndTime!!) <= Timestamp(course.startDateStartTime!!)) {
-                            Toast.makeText(context.findActivity(), "Selected Course Timings are invalid",
-                                Toast.LENGTH_LONG).show()
-                        }
-                    }
+                    editCourseDetailsViewModel.postCourseToDatabase(context, navController, course)
+                }) {
+                    Text("OK")
+                } },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun CourseEditConfirmation(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    navController: NavHostController,
+    course: Course,
+    context: Context,
+    editCourseDetailsViewModel: EditCourseDetailsViewModel
+) {
+    if (showDialog) {
+        AlertDialog(
+            title = {
+                Text("Edit Course")
+            },
+            text = {
+                Text("Are you sure you want to edit this course?")
+            },
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(onClick = {
+                    editCourseDetailsViewModel.postCourseToDatabase(context, navController, course)
                 }) {
                     Text("OK")
                 } },

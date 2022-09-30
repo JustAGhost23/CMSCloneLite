@@ -1,11 +1,7 @@
 package com.example.cmsclonelite.screens
 
 import android.Manifest
-import android.content.ContentValues
-import android.content.ContentValues.TAG
 import android.content.Context
-import android.provider.CalendarContract
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,8 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,73 +31,27 @@ import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
-import com.example.cmsclonelite.Screen
+import com.example.cmsclonelite.repository.CourseRepository
+import com.example.cmsclonelite.viewmodels.CourseDetailsViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
-import java.util.*
 
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course) {
+fun EnrolledCourseDetailsScreen(
+    navController: NavHostController,
+    course: Course,
+    courseDetailsViewModel: CourseDetailsViewModel
+) {
     mAuth = FirebaseAuth.getInstance()
-    val db = FirebaseFirestore.getInstance()
-    val email = mAuth.currentUser!!.email
     val context = LocalContext.current
-    val showCalendarDialog = remember { mutableStateOf(false) }
-    val showUnenrollDialog = remember { mutableStateOf(false) }
+    val showCalendarDialog: Boolean by courseDetailsViewModel.isCalendarDialog.observeAsState(false)
+    val showUnenrollDialog: Boolean by courseDetailsViewModel.isUnenrollDialog.observeAsState(false)
+    courseDetailsViewModel.initialize()
     val requestWritePermissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if(isGranted) {
-            showCalendarDialog.value = false
-            val calID: Long? = getCalendarId(context, email!!)
-            val startMillis: Long = Calendar.getInstance().run {
-                set(
-                    course.startDateStartTime!!.year + 1900,
-                    course.startDateStartTime!!.month,
-                    course.startDateStartTime!!.date,
-                    course.startDateStartTime!!.hours,
-                    course.startDateStartTime!!.minutes
-                )
-                timeInMillis
-            }
-            val values = ContentValues().apply {
-                put(CalendarContract.Events.DTSTART, startMillis)
-                put(CalendarContract.Events.TITLE, course.courseName)
-                put(CalendarContract.Events.CALENDAR_ID, calID)
-                put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
-                put(
-                    CalendarContract.Events.DURATION,
-                    "PT${course.endDateEndTime!!.hours - course.startDateStartTime!!.hours}H${course.endDateEndTime!!.minutes - course.startDateStartTime!!.minutes}M"
-                )
-                put(
-                    CalendarContract.Events.RRULE,
-                    "FREQ=WEEKLY;UNTIL=${course.endDateEndTime!!.year + 1900}${
-                        (course.endDateEndTime!!.month + 1).toString()
-                            .padStart(2, '0')
-                    }${
-                        course.endDateEndTime!!.date.toString().padStart(2, '0')
-                    }T${
-                        course.endDateEndTime!!.hours.toString().padStart(2, '0')
-                    }${
-                        course.endDateEndTime!!.minutes.toString().padStart(2, '0')
-                    }${
-                        course.endDateEndTime!!.seconds.toString().padStart(2, '0')
-                    }Z;BYDAY=${course.days.toString().substring(0, (course.days.toString().length-1))}"
-                )
-            }
-            context.contentResolver.insert(
-                CalendarContract.Events.CONTENT_URI,
-                values
-            )!!
-            Toast.makeText(context, "Calendar Events added", Toast.LENGTH_SHORT).show()
-            navController.navigate(Screen.MainScreen.route) {
-                popUpTo(Screen.MainScreen.route) {
-                    inclusive = true
-                }
-            }
+            courseDetailsViewModel.calendarExport(context, navController, course)
         }
     }
     val requestReadPermissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -131,25 +81,25 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
         },
     ) {
         Card {
-            if (showCalendarDialog.value) {
-                CalendarExportConfirmation(showDialog = showCalendarDialog.value,
-                    onDismiss = {showCalendarDialog.value = false},
+            if (showCalendarDialog) {
+                CalendarExportConfirmation(
+                    showDialog = showCalendarDialog,
+                    onDismiss = {courseDetailsViewModel.removeCalendarDialog()},
                     navController = navController,
                     course = course,
-                    email = email!!,
                     context = context,
+                    courseDetailsViewModel = courseDetailsViewModel,
                     requestWritePermissionsLauncher = requestWritePermissionsLauncher,
                     requestReadPermissionsLauncher =  requestReadPermissionsLauncher
                 )
             }
-            if(showUnenrollDialog.value) {
+            if(showUnenrollDialog) {
                 CourseUnenrollConfirmation(
-                    showDialog = showUnenrollDialog.value,
-                    onDismiss = {showUnenrollDialog.value = false},
+                    showDialog = showUnenrollDialog,
+                    onDismiss = {courseDetailsViewModel.removeUnenrollDialog()},
                     navController = navController,
-                    db = db,
-                    user = mAuth.currentUser!!,
-                    course = course
+                    course = course,
+                    courseDetailsViewModel = courseDetailsViewModel
                 )
             }
         }
@@ -232,11 +182,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                     .fillMaxWidth(0.9f)
                     .padding(top = 12.dp)
                     .clickable(onClick = {
-                        navController.currentBackStackEntry?.savedStateHandle?.set(
-                            key = "courseAnnouncements",
-                            value = course
-                        )
-                        navController.navigate(Screen.Announcements.route)
+                        courseDetailsViewModel.courseDetailsToAnnouncements(navController, course)
                     }),
                 elevation = 24.dp,
             ) {
@@ -256,7 +202,8 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                 }
             }
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .weight(1f)
                     .padding(bottom = 8.dp),
                 verticalAlignment = Alignment.Bottom,
@@ -264,7 +211,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
             ) {
                 Button(
                     onClick = {
-                        showCalendarDialog.value = true
+                        courseDetailsViewModel.showCalendarDialog()
                     },
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
@@ -275,7 +222,7 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
                 }
                 Button(
                     onClick = {
-                        showUnenrollDialog.value = true
+                        courseDetailsViewModel.showUnenrollDialog()
                     },
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
@@ -295,16 +242,19 @@ fun EnrolledCourseDetailsScreen(navController: NavHostController, course: Course
 @Composable
 @Preview
 fun EnrolledCourseDetailsScreenPreview() {
-    EnrolledCourseDetailsScreen(navController = rememberNavController(), course = Course())
+    val db = FirebaseFirestore.getInstance()
+    val mAuth = FirebaseAuth.getInstance()
+    val courseRepository = CourseRepository()
+    val courseDetailsViewModel = CourseDetailsViewModel(db, mAuth, courseRepository)
+    EnrolledCourseDetailsScreen(rememberNavController(), Course(), courseDetailsViewModel)
 }
 @Composable
 fun CourseUnenrollConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     navController: NavHostController,
-    db: FirebaseFirestore,
-    user: FirebaseUser,
-    course: Course
+    course: Course,
+    courseDetailsViewModel: CourseDetailsViewModel
 ) {
     if (showDialog) {
         AlertDialog(
@@ -317,12 +267,7 @@ fun CourseUnenrollConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    FirebaseMessaging.getInstance().unsubscribeFromTopic(course.id!!)
-                    db.collection("users").document("${user.uid}")
-                        .update("enrolled", FieldValue.arrayRemove("${course.id}"))
-                        .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
-                        .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error updating document", e) }
-                    navController.navigate(Screen.MainScreen.route)
+                    courseDetailsViewModel.unenrollFromCourse(navController, course)
                 } ) {
                     Text("OK")
                 }
@@ -341,8 +286,8 @@ fun CalendarExportConfirmation(
     onDismiss: () -> Unit,
     navController: NavHostController,
     course: Course,
-    email: String,
     context: Context,
+    courseDetailsViewModel: CourseDetailsViewModel,
     requestWritePermissionsLauncher: ManagedActivityResultLauncher<String, Boolean>,
     requestReadPermissionsLauncher: ManagedActivityResultLauncher<String, Boolean>
 ) {
@@ -368,52 +313,7 @@ fun CalendarExportConfirmation(
                             requestWritePermissionsLauncher.launch(Manifest.permission.WRITE_CALENDAR)
                         }
                     else {
-                        val calID: Long? = getCalendarId(context, email)
-                        val startMillis: Long = Calendar.getInstance().run {
-                            set(
-                                course.startDateStartTime!!.year + 1900,
-                                course.startDateStartTime!!.month,
-                                course.startDateStartTime!!.date,
-                                course.startDateStartTime!!.hours,
-                                course.startDateStartTime!!.minutes
-                            )
-                            timeInMillis
-                        }
-                        val values = ContentValues().apply {
-                            put(CalendarContract.Events.DTSTART, startMillis)
-                            put(CalendarContract.Events.TITLE, course.courseName)
-                            put(CalendarContract.Events.CALENDAR_ID, calID)
-                            put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
-                            put(
-                                CalendarContract.Events.DURATION,
-                                "PT${course.endDateEndTime!!.hours - course.startDateStartTime!!.hours}H${course.endDateEndTime!!.minutes - course.startDateStartTime!!.minutes}M"
-                            )
-                            put(
-                                CalendarContract.Events.RRULE,
-                                "FREQ=WEEKLY;UNTIL=${course.endDateEndTime!!.year + 1900}${
-                                    (course.endDateEndTime!!.month + 1).toString()
-                                        .padStart(2, '0')
-                                }${
-                                    course.endDateEndTime!!.date.toString().padStart(2, '0')
-                                }T${
-                                    course.endDateEndTime!!.hours.toString().padStart(2, '0')
-                                }${
-                                    course.endDateEndTime!!.minutes.toString().padStart(2, '0')
-                                }${
-                                    course.endDateEndTime!!.seconds.toString().padStart(2, '0')
-                                }Z;BYDAY=${course.days.toString().substring(0, (course.days.toString().length-1))}"
-                            );
-                        }
-                        context.contentResolver.insert(
-                            CalendarContract.Events.CONTENT_URI,
-                            values
-                        )!!
-                        Toast.makeText(context, "Calendar Events added", Toast.LENGTH_SHORT).show()
-                        navController.navigate(Screen.MainScreen.route) {
-                            popUpTo(Screen.MainScreen.route) {
-                                inclusive = true
-                            }
-                        }
+                        courseDetailsViewModel.calendarExport(context, navController, course)
                     }
                 }) {
                     Text("OK")
@@ -426,43 +326,4 @@ fun CalendarExportConfirmation(
             }
         )
     }
-}
-private fun getCalendarId(context: Context, email: String) : Long? {
-    val projection = arrayOf(CalendarContract.Calendars._ID, CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
-
-    var calCursor = context.contentResolver.query(
-        CalendarContract.Calendars.CONTENT_URI,
-        projection,
-        CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.ACCOUNT_NAME + " = '$email'",
-        null,
-        CalendarContract.Calendars._ID + " ASC"
-    )
-
-    if (calCursor != null && calCursor.count <= 0) {
-        calCursor = context.contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            projection,
-            CalendarContract.Calendars.VISIBLE + " = 1 AND " + CalendarContract.Calendars.ACCOUNT_NAME + " = '$email'",
-            null,
-            CalendarContract.Calendars._ID + " ASC"
-        )
-    }
-
-    if (calCursor != null) {
-        if (calCursor.moveToFirst()) {
-            val calName: String
-            val calID: String
-            val nameCol = calCursor.getColumnIndex(projection[1])
-            val idCol = calCursor.getColumnIndex(projection[0])
-
-            calName = calCursor.getString(nameCol)
-            calID = calCursor.getString(idCol)
-
-            Log.d(TAG, "Calendar name = $calName Calendar ID = $calID")
-
-            calCursor.close()
-            return calID.toLong()
-        }
-    }
-    return null
 }

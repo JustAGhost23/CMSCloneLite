@@ -36,7 +36,7 @@ class MainViewModel(
     val enrolledCourseIdList: LiveData<List<String>>
         get() = _enrolledCourseIdList
 
-    init {
+    fun initialize() {
         _isUnenrollAllDialog.value = false
     }
 

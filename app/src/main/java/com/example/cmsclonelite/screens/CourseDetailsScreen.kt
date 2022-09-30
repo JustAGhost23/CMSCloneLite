@@ -1,7 +1,5 @@
 package com.example.cmsclonelite.screens
 
-import android.content.ContentValues.TAG
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -12,6 +10,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,43 +22,42 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.cmsclonelite.Course
-import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.repository.CourseRepository
+import com.example.cmsclonelite.viewmodels.CourseDetailsViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
 
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun CourseDetailsScreen(navController: NavHostController, course: Course) {
-    val db = FirebaseFirestore.getInstance()
-    val courseRepository = CourseRepository()
+fun CourseDetailsScreen(
+    navController: NavHostController,
+    course: Course,
+    courseDetailsViewModel: CourseDetailsViewModel
+) {
     mAuth = FirebaseAuth.getInstance()
-    var userEnrolledCourseList: List<String>? by remember { mutableStateOf(mutableListOf()) }
-    val showDeleteDialog = remember { mutableStateOf(false) }
-    val showEnrollDialog = remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        userEnrolledCourseList = courseRepository.userEnrolledCourseList(db, mAuth.currentUser!!.uid)
-    }
+    val showDeleteDialog: Boolean by courseDetailsViewModel.isDeleteDialog.observeAsState(false)
+    val showEnrollDialog: Boolean by courseDetailsViewModel.isEnrollDialog.observeAsState(false)
+    val userEnrolledCourseList: List<String> by courseDetailsViewModel.userEnrolledCourseList.observeAsState(listOf())
+    courseDetailsViewModel.getUserEnrolledCourseList()
+    courseDetailsViewModel.initialize()
     Card {
-        if (showDeleteDialog.value) {
-            CourseDeletionConfirmation(showDialog = showDeleteDialog.value,
-                onDismiss = {showDeleteDialog.value = false},
+        if (showDeleteDialog) {
+            CourseDeletionConfirmation(
+                showDialog = showDeleteDialog,
+                onDismiss = {courseDetailsViewModel.removeDeleteDialog()},
                 navController = navController,
-                db = db,
-                course = course
+                course = course,
+                courseDetailsViewModel = courseDetailsViewModel
             )
         }
-        if (showEnrollDialog.value) {
-            CourseEnrollConfirmation(showDialog = showEnrollDialog.value,
-                onDismiss = {showEnrollDialog.value = false},
+        if (showEnrollDialog) {
+            CourseEnrollConfirmation(
+                showDialog = showEnrollDialog,
+                onDismiss = {courseDetailsViewModel.removeEnrollDialog()},
                 navController = navController,
-                db = db,
                 course = course,
-                user = mAuth.currentUser!!
+                courseDetailsViewModel = courseDetailsViewModel
             )
         }
     }
@@ -90,8 +88,9 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(0.9f)
-                        .padding(top =  12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(top = 12.dp),
                     elevation = 24.dp
                 ) {
                     Column(
@@ -106,7 +105,9 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        Divider(color = Color.LightGray, modifier = Modifier.fillMaxWidth().width(1.dp))
+                        Divider(color = Color.LightGray, modifier = Modifier
+                            .fillMaxWidth()
+                            .width(1.dp))
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
                         ) {
@@ -158,7 +159,8 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                 }
                 if (mAuth.currentUser!!.uid == ADMIN_ID) {
                     Row(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .weight(1f)
                             .padding(bottom = 8.dp),
                         verticalAlignment = Alignment.Bottom,
@@ -166,11 +168,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                     ) {
                         Button(
                             onClick = {
-                                navController.currentBackStackEntry?.savedStateHandle?.set(
-                                    key = "courseAnnouncements",
-                                    value = course
-                                )
-                                navController.navigate(Screen.Announcements.route)
+                                courseDetailsViewModel.courseDetailsToAnnouncements(navController, course)
                             },
                             modifier = Modifier.size(56.dp),
                             shape = CircleShape,
@@ -184,11 +182,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         }
                         Button(
                             onClick = {
-                                navController.currentBackStackEntry?.savedStateHandle?.set(
-                                    key = "courseEdit",
-                                    value = course
-                                )
-                                navController.navigate(Screen.EditCourseDetails.route)
+                                courseDetailsViewModel.courseDetailsToEditCourse(navController, course)
                             },
                             modifier = Modifier.size(56.dp),
                             shape = CircleShape,
@@ -202,7 +196,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         }
                         Button(
                             onClick = {
-                                showDeleteDialog.value = true
+                                courseDetailsViewModel.showDeleteDialog()
                             },
                             modifier = Modifier.size(56.dp),
                             shape = CircleShape,
@@ -215,10 +209,11 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                             )
                         }
                     }
-                } else if (userEnrolledCourseList != null) {
-                    if (course.id.toString() !in userEnrolledCourseList!!) {
+                } else {
+                    if (course.id.toString() !in userEnrolledCourseList) {
                         Row(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
                                 .weight(1f)
                                 .padding(bottom = 8.dp),
                             verticalAlignment = Alignment.Bottom,
@@ -226,7 +221,7 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
                         ) {
                             Button(
                                 onClick = {
-                                    showEnrollDialog.value = true
+                                    courseDetailsViewModel.showEnrollDialog()
                                 },
                                 modifier = Modifier.size(56.dp),
                                 shape = CircleShape,
@@ -249,15 +244,19 @@ fun CourseDetailsScreen(navController: NavHostController, course: Course) {
 @Preview(showBackground = true)
 @Composable
 fun CourseDetailsScreenPreview() {
-    CourseDetailsScreen(rememberNavController(), Course())
+    val db = FirebaseFirestore.getInstance()
+    val mAuth = FirebaseAuth.getInstance()
+    val courseRepository = CourseRepository()
+    val courseDetailsViewModel = CourseDetailsViewModel(db, mAuth, courseRepository)
+    CourseDetailsScreen(rememberNavController(), Course(), courseDetailsViewModel)
 }
 @Composable
 fun CourseDeletionConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     navController: NavHostController,
-    db: FirebaseFirestore,
-    course: Course
+    course: Course,
+    courseDetailsViewModel: CourseDetailsViewModel
 ) {
     if (showDialog) {
         AlertDialog(
@@ -270,34 +269,7 @@ fun CourseDeletionConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    db.collection("users").whereArrayContains("enrolled", course.id!!)
-                        .get()
-                        .addOnCompleteListener { task ->
-                            if(task.isSuccessful) {
-                                val documents = task.result
-                                for(document in documents) {
-                                    val user = document.id
-                                    val username = document.get("name")
-                                    val courseList: MutableList<String> = document.get("enrolled") as MutableList<String>
-                                    courseList.remove(course.id)
-                                    val userInfo = hashMapOf(
-                                        "name" to username,
-                                        "enrolled" to courseList
-                                    )
-                                    db.collection("users").document(user)
-                                        .set(userInfo)
-                                }
-                            }
-                        }
-                    db.collection("courses").document("${course.id}")
-                        .delete()
-                        .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully deleted!") }
-                        .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error deleting document", e) }
-                    navController.navigate(Screen.MainScreen.route) {
-                        popUpTo(Screen.MainScreen.route) {
-                            inclusive = true
-                        }
-                    }
+                    courseDetailsViewModel.deleteCourse(navController, course)
                 } ) {
                     Text("OK")
                 }
@@ -315,9 +287,8 @@ fun CourseEnrollConfirmation(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     navController: NavHostController,
-    db: FirebaseFirestore,
-    user: FirebaseUser,
-    course: Course
+    course: Course,
+    courseDetailsViewModel: CourseDetailsViewModel
 ) {
     if (showDialog) {
         AlertDialog(
@@ -330,16 +301,7 @@ fun CourseEnrollConfirmation(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    FirebaseMessaging.getInstance().subscribeToTopic(course.id!!)
-                    db.collection("users").document("${user.uid}")
-                        .update("enrolled", FieldValue.arrayUnion("${course.id}"))
-                        .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
-                        .addOnFailureListener { e: Exception? -> Log.w(TAG, "Error updating document", e) }
-                    navController.navigate(Screen.MainScreen.route) {
-                        popUpTo(Screen.MainScreen.route) {
-                            inclusive = true
-                        }
-                    }
+                    courseDetailsViewModel.enrollInCourse(navController, course)
                 }) {
                     Text("OK")
                 }

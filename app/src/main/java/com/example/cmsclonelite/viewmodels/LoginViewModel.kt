@@ -56,7 +56,11 @@ class LoginViewModel(
     val isNoGoogleAccountDialog: LiveData<Boolean>
         get() = _isNoGoogleAccountDialog
 
-    fun initialize() {
+    fun initializeLogin() {
+        _isNoGoogleAccountDialog.value = false
+    }
+
+    fun initializeAdminLogin() {
         _username.value = ""
         _password.value = ""
         _passwordVisible.value = true

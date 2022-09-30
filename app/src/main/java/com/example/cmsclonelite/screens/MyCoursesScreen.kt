@@ -25,7 +25,10 @@ const val ADMIN_ID = "HT8sVmAC1tSwkoOVcscEphEWYjS2"
 private lateinit var mAuth: FirebaseAuth
 
 @Composable
-fun MyCoursesScreen(mainNavController: NavHostController, mainViewModel: MainViewModel) {
+fun MyCoursesScreen(
+    mainNavController: NavHostController,
+    mainViewModel: MainViewModel
+) {
     LaunchedEffect(Unit) {
         mainViewModel.setTitle("My Courses")
     }
@@ -81,7 +84,7 @@ fun MyCoursesCustomCard(course: Course, navController: NavHostController, mainVi
                     mainViewModel.myCoursesToEnrolledCourse(navController, course)
                 }
             ),
-        elevation = 24.dp
+        elevation = 12.dp
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()

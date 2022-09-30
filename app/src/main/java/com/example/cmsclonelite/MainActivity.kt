@@ -44,7 +44,15 @@ class MainActivity : ComponentActivity() {
         }
 
         val announcementsViewModel: AnnouncementsViewModel by viewModels {
-            AnnouncementsViewModelFactory(db, mAuth, courseRepository)
+            AnnouncementsViewModelFactory(db, courseRepository)
+        }
+
+        val courseDetailsViewModel: CourseDetailsViewModel by viewModels {
+            CourseDetailsViewModelFactory(db, mAuth, courseRepository)
+        }
+
+        val editCourseDetailsViewModel: EditCourseDetailsViewModel by viewModels {
+            EditCourseDetailsViewModelFactory(db, courseRepository)
         }
 
         createNotificationChannel()
@@ -61,7 +69,9 @@ class MainActivity : ComponentActivity() {
                     loginViewModel = loginViewModel,
                     mainViewModel = mainViewModel,
                     profileViewModel = profileViewModel,
-                    announcementsViewModel = announcementsViewModel
+                    announcementsViewModel = announcementsViewModel,
+                    courseDetailsViewModel = courseDetailsViewModel,
+                    editCourseDetailsViewModel = editCourseDetailsViewModel
                 )
                 if(mAuth.currentUser == null) {
                     navController.navigate(route = Screen.Login.route) {
