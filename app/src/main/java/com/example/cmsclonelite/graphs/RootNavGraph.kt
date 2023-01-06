@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
 import com.example.cmsclonelite.Screen
 import com.example.cmsclonelite.screens.*
@@ -63,6 +64,12 @@ fun SetupNavGraph(
             val course = navController.previousBackStackEntry?.savedStateHandle?.get<Course>("courseAnnouncements")
             if (course != null) {
                 AddAnnouncementsScreen(navController = navController, course = course, announcementsViewModel = announcementsViewModel)
+            }
+        }
+        composable(route = Screen.DetailedAnnouncement.route) {
+            val announcement = navController.previousBackStackEntry?.savedStateHandle?.get<Announcement>("announcement")
+            if (announcement != null) {
+                DetailedAnnouncementScreen(navController = navController, announcement = announcement)
             }
         }
     }

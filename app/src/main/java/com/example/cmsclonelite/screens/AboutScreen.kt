@@ -38,7 +38,7 @@ fun AboutScreen(
                     }
                 )
             },
-        ) {
+        ) { padding ->
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Top,

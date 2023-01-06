@@ -79,7 +79,7 @@ fun EnrolledCourseDetailsScreen(
                 }
             )
         },
-    ) {
+    ) { padding ->
         Card {
             if (showCalendarDialog) {
                 CalendarExportConfirmation(

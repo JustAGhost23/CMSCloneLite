@@ -1,5 +1,6 @@
 package com.example.cmsclonelite.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -60,17 +61,35 @@ fun AnnouncementsScreen(
                 }
             }
         }
-    ) {
+    ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            LazyColumn(
-                contentPadding = PaddingValues(vertical = 20.dp, horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(items = announcementList) { announcement ->
-                    CustomAnnouncementCard(announcement = announcement)
+            if (announcementList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No announcements posted yet",
+                        fontSize = MaterialTheme.typography.h5.fontSize,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(vertical = 20.dp, horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(items = announcementList) { announcement ->
+                        CustomAnnouncementCard(
+                            announcement = announcement,
+                            announcementsViewModel = announcementsViewModel,
+                            navController = navController
+                        )
+                    }
                 }
             }
         }
@@ -86,11 +105,16 @@ fun AnnouncementsScreenPreview() {
     AnnouncementsScreen(rememberNavController(), Course(), announcementsViewModel)
 }
 @Composable
-fun CustomAnnouncementCard(announcement: Announcement) {
+fun CustomAnnouncementCard(announcement: Announcement, navController: NavHostController, announcementsViewModel: AnnouncementsViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp),
+            .padding(top = 4.dp)
+            .clickable(
+                onClick = {
+                    announcementsViewModel.allAnnouncementsToDetailedAnnouncement(announcement, navController)
+                }
+            ),
         elevation = 24.dp
     ) {
         Column(
