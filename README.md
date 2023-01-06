@@ -12,7 +12,7 @@
 * On logging in as admin: 
   * Admin can create courses with course name, instructor name and lecture timings.
   * Admin can also edit and delete these courses.
-  * Admin can also send announcements in each course, and a notification will be sent to users who have enrolled in that particular course.
+  * Admin can also send announcements(with attachments) in each course, and a notification will be sent to users who have enrolled in that particular course.
   * Course data is stored on Firebase Firestore.
 
 * On logging in as user:
@@ -21,6 +21,8 @@
   * User can create calendar events for classes in their course. (Implemented with Calendar Provider API)
   
 * Push notifications are implemented with Firebase Cloud Messaging.
+
+* Attachments for Announcements are stored using Firebase Cloud Storage
 
 * Toggle switch for dark mode
 
@@ -33,8 +35,8 @@
     2. Android Studio -> File -> Open
     3. Connect your Android Device and Run the program (Developer Mode of the Device should be enabled).
     
-2. **Run the Debug Apk**
-    1. Click [here](https://github.com/JustAGhost23/CMSCloneLite/releases/tag/v1.0.0) to download the debug apk.
+2. **Run the Release APK**
+    1. Click [here](https://github.com/JustAGhost23/CMSCloneLite/releases/tag/v1.0.1) to download the release APK.
     
 ---
 
