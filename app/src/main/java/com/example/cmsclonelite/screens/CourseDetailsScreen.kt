@@ -1,5 +1,6 @@
 package com.example.cmsclonelite.screens
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -14,6 +15,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +38,7 @@ fun CourseDetailsScreen(
     courseDetailsViewModel: CourseDetailsViewModel
 ) {
     mAuth = FirebaseAuth.getInstance()
+    val context = LocalContext.current
     val showDeleteDialog: Boolean by courseDetailsViewModel.isDeleteDialog.observeAsState(false)
     val showEnrollDialog: Boolean by courseDetailsViewModel.isEnrollDialog.observeAsState(false)
     val userEnrolledCourseList: List<String> by courseDetailsViewModel.userEnrolledCourseList.observeAsState(listOf())
@@ -82,7 +85,7 @@ fun CourseDetailsScreen(
                     }
                 )
             },
-        ) {
+        ) { padding ->
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally

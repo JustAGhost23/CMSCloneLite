@@ -4,7 +4,9 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.widget.DatePicker
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -17,6 +19,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -156,7 +160,7 @@ fun EditCourseDetailsScreen(
                     }
                 }
             }
-        ) {
+        ) { padding ->
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Top,
@@ -197,7 +201,7 @@ fun EditCourseDetailsScreen(
                         editCourseDetailsViewModel.setInstructor(course, it)
                     })
                 Spacer(modifier = Modifier.padding(top = 20.dp))
-                GroupedCheckbox(mItemsList = listOf("MO", "TU", "WE", "TH", "FR", "SA"), course)
+                GroupedCheckbox(mItemsList = listOf("MO", "TU", "WE", "TH", "FR", "SA"), course, padding)
                 Spacer(modifier = Modifier.padding(top = 40.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(0.9f),
@@ -226,7 +230,7 @@ fun EditCourseDetailsScreenPreview() {
     EditCourseDetailsScreen(rememberNavController(), Course(), editCourseDetailsViewModel)
 }
 @Composable
-fun GroupedCheckbox(mItemsList: List<String>, course: Course) {
+fun GroupedCheckbox(mItemsList: List<String>, course: Course, paddingValues: PaddingValues) {
     var stringList = arrayListOf<String>()
     var length = if(course.days == null) 0 else course.days?.length!!
     val list = arrayListOf<String>()
@@ -236,17 +240,21 @@ fun GroupedCheckbox(mItemsList: List<String>, course: Course) {
         length-=3
     }
     Row(
-        modifier = Modifier.fillMaxWidth(0.9f),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        modifier = Modifier.fillMaxWidth(0.9f).padding(paddingValues),
     ) {
         mItemsList.forEach { item ->
             val isChecked = remember { mutableStateOf(item in stringList) }
             if(isChecked.value) {
                 list.add(item)
             }
-            Column {
-                Row {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        modifier = Modifier.padding(start = 4.dp),
+                        text = item,
+                    )
                     Checkbox(
+                        modifier = Modifier.padding(end = 4.dp),
                         checked = isChecked.value,
                         onCheckedChange = {
                             isChecked.value = it
@@ -266,7 +274,6 @@ fun GroupedCheckbox(mItemsList: List<String>, course: Course) {
                         },
                         enabled = true
                     )
-                    Text(text = item)
                 }
             }
         }

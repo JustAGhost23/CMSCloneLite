@@ -3,8 +3,11 @@ package com.example.cmsclonelite.repository
 import android.content.ContentValues
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.net.Uri
 import android.provider.CalendarContract
+import android.provider.OpenableColumns
 import android.util.Log
+import androidx.core.net.toUri
 import com.example.cmsclonelite.Announcement
 import com.example.cmsclonelite.Course
 import com.google.auth.oauth2.AccessToken
@@ -13,7 +16,10 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.storage.StorageMetadata
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 import okhttp3.*
@@ -29,6 +35,8 @@ import kotlin.collections.HashMap
 class CourseRepository {
     private val client = OkHttpClient()
     private val ioCoroutineScope = CoroutineScope(Dispatchers.IO)
+    private val storage = Firebase.storage
+    var storageRef = storage.reference
 
     private suspend fun getCourses(db: FirebaseFirestore): List<DocumentSnapshot> {
         val coursesRef = db.collection("courses")
@@ -87,6 +95,8 @@ class CourseRepository {
                 val announcement = Announcement()
                 announcement.title = announcementMap[i]!!.getValue("title")
                 announcement.body = announcementMap[i]!!.getValue("body")
+                announcement.fileName = announcementMap[i]!!.getValue("fileName")
+                announcement.downloadUri = announcementMap[i]!!.getValue("downloadUri").toUri()
                 list.add(announcement)
             }
         }
@@ -219,7 +229,7 @@ class CourseRepository {
                 calName = calCursor.getString(nameCol)
                 calID = calCursor.getString(idCol)
 
-                Log.d(ContentValues.TAG, "Calendar name = $calName Calendar ID = $calID")
+                Log.d(TAG, "Calendar name = $calName Calendar ID = $calID")
 
                 calCursor.close()
                 return calID.toLong()
@@ -233,7 +243,7 @@ class CourseRepository {
             FirebaseMessaging.getInstance().subscribeToTopic(course.id!!)
             db.collection("users").document(uid)
                 .update("enrolled", FieldValue.arrayUnion(course.id))
-                .addOnSuccessListener { Log.d(ContentValues.TAG, "DocumentSnapshot successfully updated!") }
+                .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully updated!") }
                 .addOnFailureListener { e: Exception? -> Log.w(ContentValues.TAG, "Error updating document", e) }
         }
     }
@@ -250,6 +260,12 @@ class CourseRepository {
 
     fun deleteCourse(db: FirebaseFirestore, course: Course) {
         ioCoroutineScope.launch {
+            val fileRef = storageRef.child("files/${course.id}")
+            fileRef.listAll().addOnCompleteListener { dir ->
+                for (item in dir.result.items) {
+                    item.delete()
+                }
+            }
             db.collection("users").whereArrayContains("enrolled", course.id!!)
                 .get()
                 .addOnCompleteListener { task ->
@@ -326,13 +342,46 @@ class CourseRepository {
             for(i in newAnnouncementList) {
                 announcementHashMap["key${count}"] = hashMapOf(
                     "title" to i.title!!,
-                    "body" to i.body!!
+                    "body" to i.body!!,
+                    "fileName" to i.fileName,
+                    "downloadUri" to i.downloadUri.toString()
                 )
                 count -= 1
             }
             db.collection("courses").document(courseId)
                 .update("announcements", announcementHashMap)
         }
+    }
+
+    suspend fun uploadFileToFirebase(course: Course, fileUri: Uri, context: Context): Uri? {
+        val returnCursor = context.contentResolver.query(fileUri, null, null, null, null)
+        val nameIndex = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        returnCursor?.moveToFirst()
+        val fileName = nameIndex?.let { returnCursor.getString(it) }
+        returnCursor?.close()
+        val fileRef = storageRef.child("files/${course.id}/${fileName}")
+        fileRef.putFile(fileUri).await()
+        return fileRef.downloadUrl.await()
+    }
+
+    suspend fun getFileMetadataFromFirebase(course: Course, fileUri: Uri, context: Context): StorageMetadata {
+        val returnCursor = context.contentResolver.query(fileUri, null, null, null, null)
+        val nameIndex = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        returnCursor?.moveToFirst()
+        val fileName = nameIndex?.let { returnCursor.getString(it) }
+        returnCursor?.close()
+        val fileRef = storageRef.child("files/${course.id}/${fileName}")
+        return fileRef.metadata.await()
+    }
+
+    suspend fun deleteFileFromFirebase(course: Course, fileUri: Uri, context: Context) {
+        val returnCursor = context.contentResolver.query(fileUri, null, null, null, null)
+        val nameIndex = returnCursor?.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        returnCursor?.moveToFirst()
+        val fileName = nameIndex?.let { returnCursor.getString(it) }
+        returnCursor?.close()
+        val fileRef = storageRef.child("files/${course.id}/${fileName}")
+        fileRef.delete().await()
     }
 
     fun sendPushNotification(course: Course, announcement: Announcement) {

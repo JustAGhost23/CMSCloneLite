@@ -1,6 +1,9 @@
 package com.example.cmsclonelite
 
+import android.net.Uri
 import android.os.Parcelable
+import com.google.firebase.storage.StorageMetadata
+import com.google.firebase.storage.ktx.storageMetadata
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 import java.util.*
@@ -20,5 +23,7 @@ data class Course (
 @Parcelize
 data class Announcement (
     var title: String? = null,
-    var body: String? = null
+    var body: String? = null,
+    var fileName: String = "",
+    var downloadUri: Uri? = null,
 ): Parcelable
